@@ -45,9 +45,11 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET,
-                                "/api/v1/projects/**",
-                                "/api/v1/freelancers/**",
-                                "/api/v1/clients/**"
+                                "/api/v1/projects",
+                                "/api/v1/projects/*",
+                                "/api/v1/freelancers",
+                                "/api/v1/freelancers/*",
+                                "/api/v1/clients/*"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

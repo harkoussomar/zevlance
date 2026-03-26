@@ -1,5 +1,6 @@
 package com.freelancehub.freelancehub.project.domain;
 
+import com.freelancehub.freelancehub.bid.domain.Bid;
 import com.freelancehub.freelancehub.user.domain.Client;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -15,12 +16,11 @@ import java.util.List;
 @SuppressWarnings("FieldMayBeFinal")
 @Entity
 @Table(name = "projects")
-@Getter
-@Setter
-@NoArgsConstructor
+@Getter @Setter @NoArgsConstructor
 public class Project {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(length = 36)
     private String id;
 
@@ -44,13 +44,16 @@ public class Project {
     @Column(nullable = false)
     private ProjectCategory category;
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(
             name = "project_skills",
             joinColumns = @JoinColumn(name = "project_id")
     )
     @Column(name = "skill")
     private List<String> requiredSkills = new ArrayList<>();
+
+    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL)
+    private List<Bid> bids = new ArrayList<>();
 
     @Column(nullable = false)
     private LocalDate deadline;

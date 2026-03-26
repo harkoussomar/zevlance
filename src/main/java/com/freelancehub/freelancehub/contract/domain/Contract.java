@@ -15,12 +15,11 @@ import java.util.List;
 @SuppressWarnings("FieldMayBeFinal")
 @Entity
 @Table(name = "contracts")
-@Getter
-@Setter
-@NoArgsConstructor
+@Getter @Setter @NoArgsConstructor
 public class Contract {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(length = 36)
     private String id;
 

@@ -23,6 +23,7 @@ import java.time.LocalDateTime;
 public class Review {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(length = 36)
     private String id;
 

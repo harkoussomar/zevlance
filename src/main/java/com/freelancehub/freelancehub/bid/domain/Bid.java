@@ -25,6 +25,7 @@ public class Bid {
 
     @Id
     @Column(length = 36)
+    @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -16,6 +16,7 @@ import java.time.LocalDate;
 public class Milestone {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(length = 36)
     private String id;
 
