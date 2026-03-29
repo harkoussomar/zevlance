@@ -1,0 +1,3 @@
+CREATE TABLE admins (
+    id VARCHAR(36) PRIMARY KEY REFERENCES users(id)
+);

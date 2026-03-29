@@ -1,0 +1,93 @@
+client = {
+           "token": "eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiUk9MRV9DTElFTlQiLCJzdWIiOiJvbWFyQGNsaWVudC5jb20iLCJpYXQiOjE3NzQ1MTc5MTIsImV4cCI6MTc3NDYwNDMxMn0.mWRhxtYNDjpx8W3jfeFMBLwVV_fT7rBgi8ccvNPy7sc",
+           "type": "Bearer",
+           "email": "omar@client.com",
+           "role": "CLIENT",
+           "userId": "fd6fb26c-f4d0-4b93-a731-8ac9a348615f"
+         }
+
+clientBids = {
+               "content": [
+                 {
+                   "id": "13a1de8c-1e13-48bd-85ee-7e8cdc294c96",
+                   "projectId": "3c55e080-fe55-45e6-bc89-9d1741f4d9c3",
+                   "projectTitle": "Build a REST API",
+                   "freelancerId": "09104f6e-41d3-4bbd-a07e-f4ad6f17ed94",
+                   "freelancerName": "Sara Dev",
+                   "proposedPrice": 1200.0,
+                   "coverLetter": "I have 5 years of Spring Boot experience and have built similar platforms before. I can deliver this within the timeline.",
+                   "estimatedDays": 14,
+                   "status": "PENDING",
+                   "submittedAt": "2026-03-26T10:45:03.275892"
+                 }
+               ],
+               "empty": false,
+               "first": true,
+               "last": true,
+               "number": 0,
+               "numberOfElements": 1,
+               "pageable": {
+                 "offset": 0,
+                 "pageNumber": 0,
+                 "pageSize": 10,
+                 "paged": true,
+                 "sort": {
+                   "empty": true,
+                   "sorted": false,
+                   "unsorted": true
+                 },
+                 "unpaged": false
+               },
+               "size": 10,
+               "sort": {
+                 "empty": true,
+                 "sorted": false,
+                 "unsorted": true
+               },
+               "totalElements": 1,
+               "totalPages": 1
+             }
+
+projectItem = {
+            "id": "3c55e080-fe55-45e6-bc89-9d1741f4d9c3",
+            "title": "Build a REST API",
+            "description": "Need a Spring Boot REST API with JWT auth and PostgreSQL",
+            "budgetMin": 500.0,
+            "budgetMax": 2000.0,
+            "status": "OPEN",
+            "category": "WEB_DEV",
+            "requiredSkills": [
+              "Java",
+              "Spring Boot",
+              "PostgreSQL"
+            ],
+            "deadline": "2026-06-30",
+            "clientId": "fd6fb26c-f4d0-4b93-a731-8ac9a348615f",
+            "clientName": "Omar Client",
+            "clientCompany": "OmarTech",
+            "bidCount": 0,
+            "createdAt": null
+          }
+
+
+
+freelancer = {
+               "token": "eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiUk9MRV9GUkVFTEFOQ0VSIiwic3ViIjoic2FyYUBkZXYuY29tIiwiaWF0IjoxNzc0NTE4MDAwLCJleHAiOjE3NzQ2MDQ0MDB9.nLFAqBLPuYOZ4LX_p2IDq27EVG0H_leJc8RApsMazZA",
+               "type": "Bearer",
+               "email": "sara@dev.com",
+               "role": "FREELANCER",
+               "userId": "09104f6e-41d3-4bbd-a07e-f4ad6f17ed94"
+             }
+
+bid = {
+        "id": "13a1de8c-1e13-48bd-85ee-7e8cdc294c96",
+        "projectId": "3c55e080-fe55-45e6-bc89-9d1741f4d9c3",
+        "projectTitle": "Build a REST API",
+        "freelancerId": "09104f6e-41d3-4bbd-a07e-f4ad6f17ed94",
+        "freelancerName": "Sara Dev",
+        "proposedPrice": 1200.0,
+        "coverLetter": "I have 5 years of Spring Boot experience and have built similar platforms before. I can deliver this within the timeline.",
+        "estimatedDays": 14,
+        "status": "PENDING",
+        "submittedAt": null
+      }
