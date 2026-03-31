@@ -1,0 +1,33 @@
+import { Role } from "@/types";
+
+export type SignupStep = "role" | "form";
+
+export interface AuthResponse {
+  token: string;
+  type: string;
+  email: string;
+  role: Role;
+  userId: string;
+}
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface RegisterFreelancerRequest {
+  name: string;
+  email: string;
+  password: string;
+  phone?: string;
+}
+
+export interface RegisterClientRequest {
+  name: string;
+  email: string;
+  password: string;
+  phone?: string;
+  companyName?: string;
+  companyDescription?: string;
+  website?: string;
+}

@@ -25,7 +25,7 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
 
     @Transactional
-    public AuthResponse registerFreelancer(RegisterFreelancerRequest request) {
+    public LoginResult registerFreelancer(RegisterFreelancerRequest request) {
         if (userRepository.existsByEmail(request.email())) {
             throw new ConflictException("Email already registered");
         }
@@ -37,11 +37,11 @@ public class AuthService {
         freelancer.setPhone(request.phone());
 
         userRepository.save(freelancer);
-        return buildAuthResponse(freelancer);
+        return buildLoginResult(freelancer);
     }
 
     @Transactional
-    public AuthResponse registerClient(RegisterClientRequest request) {
+    public LoginResult registerClient(RegisterClientRequest request) {
         if (userRepository.existsByEmail(request.email())) {
             throw new ConflictException("Email already registered");
         }
@@ -56,20 +56,21 @@ public class AuthService {
         client.setWebsite(request.website());
 
         userRepository.save(client);
-        return buildAuthResponse(client);
+        return buildLoginResult(client);
     }
 
-    public AuthResponse login(LoginRequest request) {
+    public LoginResult login(LoginRequest request) {
         Authentication auth = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.email(), request.password())
         );
 
         User user = (User) auth.getPrincipal();
-        return buildAuthResponse(user);
+        return buildLoginResult(user);
     }
 
-    private AuthResponse buildAuthResponse(User user) {
+    private LoginResult buildLoginResult(User user) {
         String token = jwtService.generateToken(user);
-        return new AuthResponse(token, "Bearer", user.getEmail(), user.getRole().name(), user.getId());
+        AuthResponse response = new AuthResponse(user.getEmail(), user.getRole().name(), user.getId());
+        return new LoginResult(token, response);
     }
 }

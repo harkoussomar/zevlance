@@ -91,3 +91,16 @@ bid = {
         "status": "PENDING",
         "submittedAt": null
       }
+
+
+curl -X POST http://localhost:8080/api/v1/auth/register/client \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Client Name",
+    "email": "client@test.com",
+    "password": "password123",
+    "phone": "0666048610",
+    "companyName": "My Company",
+    "companyDescription": "Company description",
+    "website": "https://example.com"
+  }'

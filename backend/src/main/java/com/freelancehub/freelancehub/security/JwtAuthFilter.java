@@ -2,9 +2,11 @@ package com.freelancehub.freelancehub.security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie; // Import this
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -15,6 +17,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtAuthFilter extends OncePerRequestFilter {
@@ -29,34 +32,49 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
 
-        final String authHeader = request.getHeader("Authorization");
-        System.out.println("=== JwtAuthFilter ===");
-        System.out.println("URI: " + request.getRequestURI());
-        System.out.println("Auth header: " + authHeader);
+        String jwt = null;
 
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            System.out.println("No Bearer token — skipping");
+        // 1. Extract JWT from Cookies
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if ("jwt".equals(cookie.getName())) {
+                    jwt = cookie.getValue();
+                }
+            }
+        }
+
+        log.debug("=== JwtAuthFilter ===");
+        log.debug("URI: {}", request.getRequestURI());
+        log.debug("JWT from cookie found: {}", jwt != null);
+
+        // 2. If no cookie, check for Bearer header (Optional: keep this for Postman testing)
+        if (jwt == null) {
+            String authHeader = request.getHeader("Authorization");
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                jwt = authHeader.substring(7);
+                log.debug("JWT from header found");
+            }
+        }
+
+        // 3. If still no JWT, continue the filter chain
+        if (jwt == null) {
+            log.debug("No token — skipping");
             filterChain.doFilter(request, response);
             return;
         }
 
-        final String jwt = authHeader.substring(7);
         final String email;
-
         try {
             email = jwtService.extractEmail(jwt);
-            System.out.println("Extracted email: " + email);
+            log.debug("Extracted email: {}", email);
         } catch (Exception e) {
-            System.out.println("Token extraction failed: " + e.getMessage());
+            log.debug("Token extraction failed: {}", e.getMessage());
             filterChain.doFilter(request, response);
             return;
         }
 
         if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = userDetailsService.loadUserByUsername(email);
-            System.out.println("Loaded user: " + userDetails.getUsername());
-            System.out.println("Authorities: " + userDetails.getAuthorities());
-            System.out.println("Token valid: " + jwtService.isTokenValid(jwt, userDetails));
 
             if (jwtService.isTokenValid(jwt, userDetails)) {
                 UsernamePasswordAuthenticationToken authToken =
@@ -67,7 +85,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                         );
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authToken);
-                System.out.println("Authentication set successfully");
+                log.debug("Authentication set successfully");
+            } else {
+                log.debug("Token invalid for user: {}", email);
             }
         }
 
