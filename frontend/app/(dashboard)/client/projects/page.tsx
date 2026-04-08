@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
     PlusCircle,
@@ -14,30 +14,36 @@ import {
     CheckCircle2,
     AlertCircle,
 } from "lucide-react";
-import { MOCK_MY_PROJECTS } from "@/lib/mock-data";
-import {
-    formatBudget,
-    formatDate,
-    formatRelative,
-    daysUntil,
-    cn,
-} from "@/lib/utils";
-import {
-    Button,
-    Input,
-    Card,
-    CardContent,
-    EmptyState,
-    StatCard,
-    SkillTag,
-    Dialog,
-    Alert,
-} from "@/components/ui";
+
+import { cn } from "@/modules/shared";
 import {
     ProjectStatusBadge,
     CategoryBadge,
-} from "@/components/shared/status-badge";
-import type { ProjectStatus, ProjectSummaryResponse } from "@/types";
+} from "@/modules/shared/components/status-badge";
+
+import { Card, CardContent } from "@/modules/shared/components/card";
+import { SkillTag } from "@/modules/shared/components/skil-tag";
+import { Button } from "@/modules/shared/components/button";
+import { Dialog } from "@/modules/shared/components/dialog";
+import { StatCard } from "@/modules/shared/components/stat-card";
+import { Alert } from "@/modules/shared/components/alert";
+import { Input } from "@/modules/shared/components/input";
+import { EmptyState } from "@/modules/shared/components/empty-state";
+import { Skeleton } from "@/modules/shared/components/skeleton";
+import {
+    ProjectStatus,
+    ProjectSummaryResponse,
+} from "@/modules/projects/types";
+import {
+    useCancelProject,
+    useMyProjects,
+} from "@/modules/projects/hooks/useProject";
+import {
+    daysUntil,
+    formatBudget,
+    formatDate,
+    formatRelative,
+} from "@/modules/shared";
 
 // ─── Status filter tabs ───────────────────────────────────────────────────────
 
@@ -49,14 +55,50 @@ const STATUS_TABS: Array<{ value: ProjectStatus | "ALL"; label: string }> = [
     { value: "CANCELLED", label: "Cancelled" },
 ];
 
+// ─── Loading skeleton ─────────────────────────────────────────────────────────
+
+function ProjectRowSkeleton() {
+    return (
+        <Card>
+            <CardContent className="p-5">
+                <div className="flex items-start gap-4">
+                    <div className="flex-1 space-y-3">
+                        <div className="flex gap-2">
+                            <Skeleton className="h-5 w-20 rounded-full" />
+                            <Skeleton className="h-5 w-16 rounded-full" />
+                        </div>
+                        <Skeleton className="h-4 w-2/3" />
+                        <div className="flex gap-4">
+                            <Skeleton className="h-3 w-20" />
+                            <Skeleton className="h-3 w-28" />
+                            <Skeleton className="h-3 w-16" />
+                        </div>
+                        <div className="flex gap-1.5">
+                            <Skeleton className="h-5 w-14 rounded-md" />
+                            <Skeleton className="h-5 w-18 rounded-md" />
+                            <Skeleton className="h-5 w-16 rounded-md" />
+                        </div>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                        <Skeleton className="h-8 w-24 rounded-lg" />
+                        <Skeleton className="h-8 w-16 rounded-lg" />
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
 // ─── Project Row ──────────────────────────────────────────────────────────────
 
 function ProjectRow({
     project,
     onCancel,
+    cancelling,
 }: {
     project: ProjectSummaryResponse;
     onCancel: (id: string) => void;
+    cancelling: boolean;
 }) {
     const [showCancel, setShowCancel] = useState(false);
     const daysLeft = daysUntil(project.deadline);
@@ -81,7 +123,7 @@ function ProjectRow({
                                     )}
                             </div>
 
-                            <Link href={`/projects/${project.id}`}>
+                            <Link href={`/client/projects/${project.id}`}>
                                 <h3 className="font-bold text-foreground hover:text-primary transition-colors text-sm leading-snug line-clamp-1 mb-2">
                                     {project.title}
                                 </h3>
@@ -134,7 +176,7 @@ function ProjectRow({
 
                         {/* Actions */}
                         <div className="flex flex-col gap-2 shrink-0">
-                            <Link href={`/projects/${project.id}`}>
+                            <Link href={`/client/projects/${project.id}`}>
                                 <Button
                                     size="sm"
                                     variant="outline"
@@ -146,9 +188,12 @@ function ProjectRow({
                                         : "View"}
                                 </Button>
                             </Link>
+
                             {project.status === "OPEN" && (
                                 <>
-                                    <Link href={`/projects/${project.id}/edit`}>
+                                    <Link
+                                        href={`/client/projects/${project.id}/edit`}
+                                    >
                                         <Button
                                             size="sm"
                                             variant="ghost"
@@ -162,6 +207,7 @@ function ProjectRow({
                                         size="sm"
                                         variant="ghost"
                                         onClick={() => setShowCancel(true)}
+                                        disabled={cancelling}
                                         className="w-full text-xs text-destructive hover:text-destructive hover:bg-destructive/5"
                                     >
                                         <Trash2 className="w-3.5 h-3.5" />
@@ -169,8 +215,9 @@ function ProjectRow({
                                     </Button>
                                 </>
                             )}
+
                             {project.status === "IN_PROGRESS" && (
-                                <Link href="/contracts">
+                                <Link href="/client/contracts">
                                     <Button
                                         size="sm"
                                         variant="ghost"
@@ -218,36 +265,56 @@ function ProjectRow({
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function ProjectsPage() {
-    const [projects, setProjects] = useState(MOCK_MY_PROJECTS);
+export default function MyProjectsPage() {
     const [search, setSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState<ProjectStatus | "ALL">(
         "ALL",
     );
     const [cancelledId, setCancelledId] = useState<string | null>(null);
 
+    // Load a large page to enable full client-side search + status filtering.
+    // TODO: Move to server-side filtering if /projects/my grows to support more params.
+    const { data, isLoading, error } = useMyProjects({ page: 0, size: 100 });
+    const cancelProject = useCancelProject();
+
+    const projects = data?.content ?? [];
+
     const handleCancel = (id: string) => {
-        setProjects((prev) =>
-            prev.map((p) => (p.id === id ? { ...p, status: "CANCELLED" } : p)),
-        );
+        cancelProject.mutate(id);
         setCancelledId(id);
         setTimeout(() => setCancelledId(null), 3000);
     };
 
-    const filtered = projects.filter((p) => {
-        if (search && !p.title.toLowerCase().includes(search.toLowerCase()))
-            return false;
-        if (statusFilter !== "ALL" && p.status !== statusFilter) return false;
-        return true;
-    });
+    const filtered = useMemo(
+        () =>
+            projects.filter((p) => {
+                if (
+                    search &&
+                    !p.title.toLowerCase().includes(search.toLowerCase())
+                )
+                    return false;
+                if (statusFilter !== "ALL" && p.status !== statusFilter)
+                    return false;
+                return true;
+            }),
+        [projects, search, statusFilter],
+    );
 
-    // Stats
+    // Stats derived from the full loaded list
     const open = projects.filter((p) => p.status === "OPEN").length;
     const inProgress = projects.filter(
         (p) => p.status === "IN_PROGRESS",
     ).length;
     const completed = projects.filter((p) => p.status === "COMPLETED").length;
     const totalBids = projects.reduce((s, p) => s + p.bidCount, 0);
+
+    if (error) {
+        return (
+            <Alert variant="destructive">
+                Failed to load your projects. Please refresh the page.
+            </Alert>
+        );
+    }
 
     return (
         <div className="space-y-6">
@@ -257,12 +324,16 @@ export default function ProjectsPage() {
                     <h1 className="text-2xl font-bold text-foreground">
                         My Projects
                     </h1>
-                    <p className="text-muted-foreground mt-1">
-                        {projects.length} total · {open} open · {inProgress} in
-                        progress
-                    </p>
+                    {isLoading ? (
+                        <Skeleton className="h-4 w-48 mt-1" />
+                    ) : (
+                        <p className="text-muted-foreground mt-1">
+                            {projects.length} total · {open} open · {inProgress}{" "}
+                            in progress
+                        </p>
+                    )}
                 </div>
-                <Link href="/projects/create">
+                <Link href="/client/projects/create">
                     <Button size="sm">
                         <PlusCircle className="w-3.5 h-3.5" />
                         Post Project
@@ -274,22 +345,22 @@ export default function ProjectsPage() {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatCard
                     label="Open"
-                    value={open}
+                    value={isLoading ? "—" : open}
                     icon={<Briefcase className="w-4 h-4" />}
                 />
                 <StatCard
                     label="In Progress"
-                    value={inProgress}
+                    value={isLoading ? "—" : inProgress}
                     icon={<Clock className="w-4 h-4" />}
                 />
                 <StatCard
                     label="Completed"
-                    value={completed}
+                    value={isLoading ? "—" : completed}
                     icon={<CheckCircle2 className="w-4 h-4" />}
                 />
                 <StatCard
                     label="Total Bids Received"
-                    value={totalBids}
+                    value={isLoading ? "—" : totalBids}
                     icon={<GitBranch className="w-4 h-4" />}
                     trend={{ value: "+5 this week", positive: true }}
                 />
@@ -328,7 +399,13 @@ export default function ProjectsPage() {
             </div>
 
             {/* List */}
-            {filtered.length === 0 ? (
+            {isLoading ? (
+                <div className="space-y-3">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                        <ProjectRowSkeleton key={i} />
+                    ))}
+                </div>
+            ) : filtered.length === 0 ? (
                 <EmptyState
                     icon={<Briefcase className="w-5 h-5" />}
                     title="No projects found"
@@ -353,6 +430,7 @@ export default function ProjectsPage() {
                             key={project.id}
                             project={project}
                             onCancel={handleCancel}
+                            cancelling={cancelProject.isPending}
                         />
                     ))}
                 </div>

@@ -1,12 +1,8 @@
 import Link from "next/link";
 import { Briefcase } from "lucide-react";
-import { LeftDecorativePanel } from "@/modules/auth/components/LeftDecorativePanel";
-import { LoginForm } from "@/modules/auth/components/LoginForm";
+import { LeftDecorativePanel, LoginForm } from "@/modules/auth";
 
 export default function LoginPage() {
-
-
-
     return (
         <div className="min-h-screen bg-background flex">
             {/* Left decorative panel */}

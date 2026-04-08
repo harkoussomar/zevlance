@@ -23,13 +23,9 @@ public class JwtService {
 
     private final JwtProperties jwtProperties;
 
-    /**
-     * Fail fast on startup if the secret is too short for HS256 (< 256 bits).
-     */
     @PostConstruct
     public void validateSecret() {
         byte[] keyBytes = Decoders.BASE64.decode(jwtProperties.getSecret());
-
         if (keyBytes.length < 32) {
             throw new IllegalStateException(
                     "jwt.secret must decode to at least 32 bytes (256 bits) for HS256. " +
@@ -40,13 +36,10 @@ public class JwtService {
 
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
-
-        // Safe: stream instead of iterator().next() — won't throw if authorities is empty
         userDetails.getAuthorities().stream()
                 .findFirst()
                 .map(GrantedAuthority::getAuthority)
                 .ifPresent(authority -> claims.put("role", authority));
-
         return buildToken(claims, userDetails);
     }
 

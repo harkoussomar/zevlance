@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
+import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
 import { ArrowRight, Eye, EyeOff } from "lucide-react";
-import { Button, FormField, Input, Textarea, Alert } from "@/components/ui";
 import {
     registerFreelancerSchema,
     registerClientSchema,
@@ -12,7 +11,12 @@ import {
     type RegisterClientSchemaType,
 } from "../schemas/register.schema";
 import { useRegister } from "../hooks/useRegister";
-import type { Role } from "@/types";
+import type { Role } from "@/modules/shared/types";
+import { Alert } from "@/modules/shared/components/alert";
+import { FormField } from "@/modules/shared/components/form-field";
+import { Input } from "@/modules/shared/components/input";
+import { Button } from "@/modules/shared/components/button";
+import { Textarea } from "@/modules/shared/components/textarea";
 
 interface RegisterFormProps {
     role: Role;
@@ -35,7 +39,11 @@ function PasswordToggle({
             aria-label={show ? "Hide password" : "Show password"}
             className="text-muted-foreground hover:text-foreground transition-colors"
         >
-            {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            {show ? (
+                <EyeOff className="w-4 h-4" />
+            ) : (
+                <Eye className="w-4 h-4" />
+            )}
         </button>
     );
 }
@@ -71,7 +79,11 @@ function TermsFooter() {
 // ─── Freelancer form ──────────────────────────────────────────────────────────
 
 function FreelancerForm() {
-    const { register: registerUser, isLoading, serverError } = useRegister("FREELANCER");
+    const {
+        register: registerUser,
+        isLoading,
+        serverError,
+    } = useRegister("FREELANCER");
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
 
@@ -85,7 +97,11 @@ function FreelancerForm() {
     });
 
     return (
-        <form onSubmit={handleSubmit(registerUser)} className="space-y-4" noValidate>
+        <form
+            onSubmit={handleSubmit(registerUser)}
+            className="space-y-4"
+            noValidate
+        >
             {serverError && <Alert variant="destructive">{serverError}</Alert>}
 
             <div className="grid sm:grid-cols-2 gap-4">
@@ -153,7 +169,12 @@ function FreelancerForm() {
 
             <PasswordHint />
 
-            <Button type="submit" size="lg" loading={isLoading} className="w-full">
+            <Button
+                type="submit"
+                size="lg"
+                loading={isLoading}
+                className="w-full"
+            >
                 Create Account
                 <ArrowRight className="w-4 h-4" />
             </Button>
@@ -166,7 +187,11 @@ function FreelancerForm() {
 // ─── Client form ──────────────────────────────────────────────────────────────
 
 function ClientForm() {
-    const { register: registerUser, isLoading, serverError } = useRegister("CLIENT");
+    const {
+        register: registerUser,
+        isLoading,
+        serverError,
+    } = useRegister("CLIENT");
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
 
@@ -179,7 +204,11 @@ function ClientForm() {
     });
 
     return (
-        <form onSubmit={handleSubmit(registerUser)} className="space-y-4" noValidate>
+        <form
+            onSubmit={handleSubmit(registerUser)}
+            className="space-y-4"
+            noValidate
+        >
             {serverError && <Alert variant="destructive">{serverError}</Alert>}
 
             <div className="grid sm:grid-cols-2 gap-4">
@@ -283,7 +312,12 @@ function ClientForm() {
                 </FormField>
             </div>
 
-            <Button type="submit" size="lg" loading={isLoading} className="w-full">
+            <Button
+                type="submit"
+                size="lg"
+                loading={isLoading}
+                className="w-full"
+            >
                 Create Account
                 <ArrowRight className="w-4 h-4" />
             </Button>

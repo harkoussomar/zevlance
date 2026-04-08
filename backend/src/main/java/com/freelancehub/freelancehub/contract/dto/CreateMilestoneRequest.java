@@ -2,6 +2,7 @@ package com.freelancehub.freelancehub.contract.dto;
 
 import jakarta.validation.constraints.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public record CreateMilestoneRequest(
@@ -13,7 +14,7 @@ public record CreateMilestoneRequest(
         String description,
 
         @Positive(message = "Amount must be positive")
-        double amount,
+        BigDecimal amount,
 
         @NotNull(message = "Due date is required")
         @Future(message = "Due date must be in the future")

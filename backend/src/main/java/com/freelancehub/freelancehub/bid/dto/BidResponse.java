@@ -2,6 +2,7 @@ package com.freelancehub.freelancehub.bid.dto;
 
 import com.freelancehub.freelancehub.bid.domain.BidStatus;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public record BidResponse(
@@ -10,7 +11,7 @@ public record BidResponse(
         String projectTitle,
         String freelancerId,
         String freelancerName,
-        double proposedPrice,
+        BigDecimal proposedPrice,
         String coverLetter,
         int estimatedDays,
         BidStatus status,

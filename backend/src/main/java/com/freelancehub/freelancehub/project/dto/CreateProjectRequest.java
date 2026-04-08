@@ -3,6 +3,7 @@ package com.freelancehub.freelancehub.project.dto;
 import com.freelancehub.freelancehub.project.domain.ProjectCategory;
 import jakarta.validation.constraints.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -16,10 +17,10 @@ public record CreateProjectRequest(
         String description,
 
         @Positive(message = "Budget min must be positive")
-        double budgetMin,
+        BigDecimal budgetMin,
 
         @Positive(message = "Budget max must be positive")
-        double budgetMax,
+        BigDecimal budgetMax,
 
         @NotNull(message = "Category is required")
         ProjectCategory category,

@@ -1,38 +1,66 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth-store";
-import { authService } from "../auth.service";
 import type { LoginSchemaType } from "../schemas/login.schema";
-import { LoginParseApiError } from "../utils/login-parse-api-error";
-import { ROLE_REDIRECT } from "../utils/role-redirection";
+import { authService } from "../services/auth.service";
+import { parseApiError, ROLE_REDIRECT } from "@/modules/shared";
 
+interface UseLoginReturn {
+    login: (data: LoginSchemaType) => Promise<void>;
+    isLoading: boolean;
+    serverError: string | null;
+    clearError: () => void;
+}
 
-export function useLogin() {
+export function useLogin(): UseLoginReturn {
     const router = useRouter();
     const storeLogin = useAuthStore((s) => s.login);
+
     const [isLoading, setIsLoading] = useState(false);
     const [serverError, setServerError] = useState<string | null>(null);
 
-    const login = async (data: LoginSchemaType) => {
-        setIsLoading(true);
-        setServerError(null);
+    const abortRef = useRef<AbortController | null>(null);
 
-        try {
-            // 1. Call POST /auth/login
-            const authResponse = await authService.login(data);
+    useEffect(() => {
+        return () => {
+            abortRef.current?.abort();
+        };
+    }, []);
 
-            // 2. Hydrate the Zustand store with the AuthResponse
-            storeLogin(authResponse);
+    const clearError = useCallback(() => setServerError(null), []);
 
-            router.push(ROLE_REDIRECT[authResponse.role] ?? "/");
-        } catch (err) {
-            setServerError(LoginParseApiError(err));
-        } finally {
-            setIsLoading(false);
-        }
-    };
+    const login = useCallback(
+        async (data: LoginSchemaType) => {
+            abortRef.current?.abort();
+            const controller = new AbortController();
+            abortRef.current = controller;
 
-    return { login, isLoading, serverError };
+            setIsLoading(true);
+            setServerError(null);
+
+            try {
+                const authResponse = await authService.login(
+                    data,
+                    controller.signal,
+                );
+                storeLogin(authResponse);
+                router.push(ROLE_REDIRECT[authResponse.role] ?? "/");
+            } catch (err) {
+                if ((err as Error).name === "AbortError") return;
+                setServerError(
+                    parseApiError(err, {
+                        401: "Invalid email or password",
+                        403: "Access denied",
+                    }),
+                );
+            } finally {
+                setIsLoading(false);
+            }
+        },
+        [router, storeLogin],
+    );
+
+    return { login, isLoading, serverError, clearError };
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { Role } from "@/types";
+import { Role } from "@/modules/shared/types";
 import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
 import { RoleSelector } from "./RoleSelector";
@@ -14,7 +14,6 @@ export const SignupFlow = () => {
     return (
         <div className="flex-1 flex items-center justify-center p-6 lg:p-12 overflow-y-auto">
             <div className="w-full max-w-lg">
-
                 {/* Step 1 — Role selection */}
                 {step === "role" && (
                     <RoleSelector
@@ -49,7 +48,6 @@ export const SignupFlow = () => {
                         <RegisterForm role={selectedRole} />
                     </div>
                 )}
-
             </div>
         </div>
     );

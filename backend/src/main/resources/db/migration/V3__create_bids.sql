@@ -1,4 +1,4 @@
-git commit -m "Restructure project: move backend into /backend folder"CREATE TABLE bids (
+CREATE TABLE bids (
     id             VARCHAR(36)      PRIMARY KEY,
     freelancer_id  VARCHAR(36)      NOT NULL REFERENCES users(id),
     project_id     VARCHAR(36)      NOT NULL REFERENCES projects(id),

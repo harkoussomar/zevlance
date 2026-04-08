@@ -35,4 +35,27 @@ public interface BidRepository extends JpaRepository<Bid, String> {
             @Param("acceptedBidId") String acceptedBidId,
             @Param("status") BidStatus status
     );
+
+    @Query("""
+    SELECT COUNT(b) FROM Bid b
+    WHERE b.freelancer.id = :freelancerId
+    AND b.status = :status
+    """)
+    long countByFreelancerIdAndStatus(
+            @Param("freelancerId") String freelancerId,
+            @Param("status") BidStatus status
+    );
+
+
+
+    @Query("""
+    SELECT b FROM Bid b
+    WHERE b.freelancer.id = :freelancerId
+    ORDER BY b.submittedAt DESC
+    LIMIT :limit
+    """)
+    List<Bid> findTopByFreelancerId(
+            @Param("freelancerId") String freelancerId,
+            @Param("limit") int limit
+    );
 }

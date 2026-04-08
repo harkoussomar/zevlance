@@ -2,6 +2,7 @@ package com.freelancehub.freelancehub.contract.dto;
 
 import com.freelancehub.freelancehub.contract.domain.ContractStatus;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -15,7 +16,7 @@ public record ContractResponse(
         String clientId,
         String clientName,
         ContractStatus status,
-        double agreedPrice,
+        BigDecimal agreedPrice,
         LocalDate startDate,
         LocalDate endDate,
         LocalDateTime createdAt

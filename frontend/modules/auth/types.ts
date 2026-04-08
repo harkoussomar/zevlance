@@ -1,33 +1,32 @@
-import { Role } from "@/types";
+import { Role } from "@/modules/shared/types";
 
 export type SignupStep = "role" | "form";
 
 export interface AuthResponse {
-  token: string;
-  type: string;
-  email: string;
-  role: Role;
-  userId: string;
+    email: string;
+    role: Role;
+    userId: string;
+    name: string;
 }
 
 export interface LoginRequest {
-  email: string;
-  password: string;
+    email: string;
+    password: string;
 }
 
 export interface RegisterFreelancerRequest {
-  name: string;
-  email: string;
-  password: string;
-  phone?: string;
+    name: string;
+    email: string;
+    password: string;
+    phone?: string;
 }
 
 export interface RegisterClientRequest {
-  name: string;
-  email: string;
-  password: string;
-  phone?: string;
-  companyName?: string;
-  companyDescription?: string;
-  website?: string;
+    name: string;
+    email: string;
+    password: string;
+    phone?: string;
+    companyName?: string;
+    companyDescription?: string;
+    website?: string;
 }

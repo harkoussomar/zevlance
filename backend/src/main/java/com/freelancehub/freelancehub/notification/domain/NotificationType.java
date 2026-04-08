@@ -1,0 +1,20 @@
+package com.freelancehub.freelancehub.notification.domain;
+
+public enum NotificationType {
+    // Bid
+    BID_RECEIVED, BID_ACCEPTED, BID_REJECTED, BID_WITHDRAWN,
+
+    // Contract
+    CONTRACT_CREATED, CONTRACT_COMPLETED, CONTRACT_CANCELLED, CONTRACT_DISPUTED,
+
+    // Milestone
+    MILESTONE_FUNDED, MILESTONE_SUBMITTED, MILESTONE_APPROVED,
+
+    MILESTONE_REVISION_REQUESTED, MILESTONE_DISPUTED,
+
+    // Payment
+    PAYMENT_RELEASED, PAYMENT_REFUNDED,
+
+    // Auth (email only)
+    WELCOME, EMAIL_VERIFICATION, PASSWORD_RESET
+}

@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @SuppressWarnings("FieldMayBeFinal")
@@ -37,7 +38,7 @@ public class Bid {
     private Project project;
 
     @Column(nullable = false)
-    private double proposedPrice;
+    private BigDecimal proposedPrice;
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String coverLetter;

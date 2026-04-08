@@ -14,6 +14,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
+
 @RestController
 @RequestMapping("/api/v1/projects") // ✅ move /projects here
 @RequiredArgsConstructor
@@ -26,8 +28,8 @@ public class ProjectController {
     public ResponseEntity<Page<ProjectSummaryResponse>> getProjects(
             @RequestParam(required = false) ProjectCategory category,
             @RequestParam(required = false) ProjectStatus status,
-            @RequestParam(required = false) Double budgetMin,
-            @RequestParam(required = false) Double budgetMax,
+            @RequestParam(required = false) BigDecimal budgetMin,
+            @RequestParam(required = false) BigDecimal budgetMax,
             @RequestParam(required = false) String skill,
             @PageableDefault(size = 10, sort = "createdAt") Pageable pageable
     ) {

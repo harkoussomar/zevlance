@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -32,7 +33,7 @@ public class Contract {
     private ContractStatus status = ContractStatus.ACTIVE;
 
     @Column(nullable = false)
-    private double agreedPrice;
+    private BigDecimal agreedPrice;
 
     @Column(nullable = false)
     private LocalDate startDate;

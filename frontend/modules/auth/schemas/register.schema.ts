@@ -9,9 +9,9 @@ const baseSchema = z.object({
         .min(2, "Name must be at least 2 characters")
         .max(100, "Name must be under 100 characters"),
     email: z
-        .string()
+        .email("Enter a valid email address")
         .min(1, "Email is required")
-        .email("Enter a valid email address"),
+        ,
     password: z
         .string()
         .min(1, "Password is required")

@@ -61,10 +61,9 @@ public class ProjectService {
 
     @PreAuthorize("hasRole('CLIENT')")
     @Transactional
-    public ProjectResponse createProject(CreateProjectRequest request, String clientId) {
-        if (request.budgetMin() > request.budgetMax()) {
-            throw new IllegalArgumentException("Budget min cannot be greater than budget max");
-        }
+    public ProjectResponse createProject(CreateProjectRequest request, String clientId) {if (request.budgetMin().compareTo(request.budgetMax()) > 0) {
+        throw new IllegalArgumentException("Budget min cannot be greater than budget max");
+    }
 
         Client client = userService.findClientById(clientId);
 

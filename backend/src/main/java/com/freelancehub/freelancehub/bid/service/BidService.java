@@ -11,12 +11,16 @@ import com.freelancehub.freelancehub.contract.service.ContractService;
 import com.freelancehub.freelancehub.exception.ConflictException;
 import com.freelancehub.freelancehub.exception.NotFoundException;
 import com.freelancehub.freelancehub.exception.UnauthorizedException;
+import com.freelancehub.freelancehub.notification.domain.NotificationType;
+import com.freelancehub.freelancehub.notification.service.EmailTemplates;
+import com.freelancehub.freelancehub.notification.service.NotificationService;
 import com.freelancehub.freelancehub.project.domain.Project;
 import com.freelancehub.freelancehub.project.domain.ProjectStatus;
 import com.freelancehub.freelancehub.project.service.ProjectService;
 import com.freelancehub.freelancehub.user.domain.Freelancer;
 import com.freelancehub.freelancehub.user.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -35,6 +39,10 @@ public class BidService {
     private final ContractService contractService;
     private final ProjectService projectService;
     private final UserService userService;
+    private final NotificationService notificationService;
+
+    @Value("${app.frontend-url}")
+    private String frontendUrl;
 
     // ── Freelancer: submit bid ────────────────────────────────────
 
@@ -64,7 +72,25 @@ public class BidService {
         bid.setCoverLetter(request.coverLetter());
         bid.setEstimatedDays(request.estimatedDays());
 
-        return toResponse(bidRepository.save(bid));
+        bidRepository.save(bid);
+
+        notificationService.notifyWithEmail(
+                project.getClient().getId(),
+                NotificationType.BID_RECEIVED,
+                "New bid on \"" + project.getTitle() + "\"",
+                freelancer.getName() + " submitted a bid of $" + request.proposedPrice(),
+                bid.getId(),
+                "BID",
+                "New bid on your project",
+                EmailTemplates.bidReceived(
+                        project.getClient().getName(),
+                        freelancer.getName(),
+                        project.getTitle(),
+                        frontendUrl + "/client/projects/" + project.getId()
+                )
+        );
+
+        return toResponse(bid);
     }
 
     // ── Client: view bids on own project ─────────────────────────
@@ -105,6 +131,15 @@ public class BidService {
         }
 
         bid.setStatus(BidStatus.WITHDRAWN);
+
+        notificationService.notify(
+                bid.getProject().getClient().getId(),
+                NotificationType.BID_WITHDRAWN,
+                "A freelancer withdrew their bid",
+                bid.getFreelancer().getName() + " withdrew their bid on \"" + bid.getProject().getTitle() + "\"",
+                bid.getId(), "BID"
+        );
+
         return toResponse(bid);
     }
 
@@ -121,6 +156,17 @@ public class BidService {
         }
 
         bid.setStatus(BidStatus.REJECTED);
+
+        notificationService.notifyWithEmail(
+                bid.getFreelancer().getId(),
+                NotificationType.BID_REJECTED,
+                "Your bid was not selected",
+                "Your bid on \"" + bid.getProject().getTitle() + "\" was rejected.",
+                bid.getId(), "BID",
+                "Bid update",
+                EmailTemplates.bidRejected(bid.getFreelancer().getName(), bid.getProject().getTitle())
+        );
+
         return toResponse(bid);
     }
 
@@ -159,10 +205,26 @@ public class BidService {
         // Step 3: flip project to IN_PROGRESS
         project.setStatus(ProjectStatus.IN_PROGRESS);
 
-        // Step 4: create contract automatically
-        return contractService.createContract(bid);
-    }
+        // Step 4: create contract
+        ContractResponse contractResponse = contractService.createContract(bid);
 
+        // Step 5: send notification
+        notificationService.notifyWithEmail(
+                bid.getFreelancer().getId(),
+                NotificationType.BID_ACCEPTED,
+                "Your bid was accepted! 🎉",
+                "Your bid on \"" + bid.getProject().getTitle() + "\" was accepted. Contract is now active.",
+                bid.getId(), "BID",
+                "Your bid was accepted!",
+                EmailTemplates.bidAccepted(
+                        bid.getFreelancer().getName(),
+                        bid.getProject().getTitle(),
+                        frontendUrl + "/freelancer/contracts/" + contractResponse.id()
+                )
+        );
+
+        return contractResponse;
+    }
     // ── Helpers ───────────────────────────────────────────────────
 
     private Bid findBidById(String id) {

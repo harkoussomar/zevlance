@@ -3,6 +3,7 @@ package com.freelancehub.freelancehub.project.dto;
 import com.freelancehub.freelancehub.project.domain.ProjectCategory;
 import com.freelancehub.freelancehub.project.domain.ProjectStatus;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -11,8 +12,8 @@ import java.util.List;
 public record ProjectSummaryResponse(
         String id,
         String title,
-        double budgetMin,
-        double budgetMax,
+        BigDecimal budgetMin,
+        BigDecimal budgetMax,
         ProjectStatus status,
         ProjectCategory category,
         List<String> requiredSkills,

@@ -3,14 +3,22 @@ package com.freelancehub.freelancehub.contract.dto;
 import com.freelancehub.freelancehub.contract.domain.MilestoneStatus;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+import java.math.BigDecimal;
 
 public record MilestoneResponse(
         String id,
         String contractId,
         String title,
         String description,
-        double amount,
+        BigDecimal amount,
         MilestoneStatus status,
         LocalDate dueDate,
-        String deliverableUrl
+        String deliverableUrl,
+        BigDecimal platformFeeAmount,
+        BigDecimal freelancerPayout,
+        LocalDateTime fundedAt,
+        LocalDateTime releasedAt,
+        int revisionCount
 ) {}

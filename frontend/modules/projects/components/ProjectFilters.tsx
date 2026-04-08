@@ -1,8 +1,14 @@
-import { Button, Card, CardContent, Input, Select } from "@/components/ui";
-import { CATEGORY_OPTIONS, STATUS_OPTIONS } from "@/lib/utils";
-import { ProjectCategory, ProjectStatus } from "@/types";
-import { Search, SlidersHorizontal, X } from "lucide-react";
 import { useState } from "react";
+import { Search, SlidersHorizontal, X } from "lucide-react";
+
+import { Button } from "@/modules/shared/components/button";
+import { Card, CardContent } from "@/modules/shared/components/card";
+import { Input } from "@/modules/shared/components/input";
+import { Select } from "@/modules/shared/components/select";
+import { CATEGORY_OPTIONS, STATUS_OPTIONS } from "@/modules/shared";
+import { ProjectCategory, ProjectStatus } from "../types";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface ProjectFilterProps {
     search: string;
@@ -20,7 +26,29 @@ interface ProjectFilterProps {
     clearFilters: () => void;
 }
 
-export const ProjectFilter = ({
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+interface FilterChipProps {
+    label: string;
+    onRemove: () => void;
+}
+
+function FilterChip({ label, onRemove }: FilterChipProps) {
+    return (
+        <button
+            type="button"
+            onClick={onRemove}
+            className="inline-flex items-center gap-1.5 text-xs font-medium bg-primary/8 text-primary border border-primary/20 px-2.5 py-1 rounded-full transition-colors hover:bg-primary/15 hover:border-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+        >
+            {label}
+            <X className="w-3 h-3 opacity-60" />
+        </button>
+    );
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
+export function ProjectFilter({
     search,
     setSearch,
     category,
@@ -34,148 +62,201 @@ export const ProjectFilter = ({
     setPage,
     hasActiveFilters,
     clearFilters,
-}: ProjectFilterProps) => {
+}: ProjectFilterProps) {
     const [showFilters, setShowFilters] = useState(false);
 
+    const activeCount = [category, status, budgetMin || budgetMax].filter(Boolean).length;
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    const resetPageAndSet =
+        <T,>(setter: (value: T) => void) =>
+        (value: T) => {
+            setter(value);
+            setPage(0);
+        };
+
+    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setSearch(e.target.value);
+        setPage(0);
+    };
+
+    const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) =>
+        resetPageAndSet(setCategory)(e.target.value as ProjectCategory | "");
+
+    const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) =>
+        resetPageAndSet(setStatus)(e.target.value as ProjectStatus | "");
+
+    const handleBudgetMinChange = (e: React.ChangeEvent<HTMLInputElement>) =>
+        resetPageAndSet(setBudgetMin)(e.target.value);
+
+    const handleBudgetMaxChange = (e: React.ChangeEvent<HTMLInputElement>) =>
+        resetPageAndSet(setBudgetMax)(e.target.value);
+
+    const removeBudget = () => {
+        setBudgetMin("");
+        setBudgetMax("");
+        setPage(0);
+    };
+
+    const categoryLabel = CATEGORY_OPTIONS.find((o) => o.value === category)?.label;
+    const statusLabel = STATUS_OPTIONS.find((o) => o.value === status)?.label;
+    const budgetLabel =
+        budgetMin || budgetMax
+            ? `$${budgetMin || "0"} – $${budgetMax || "∞"}`
+            : null;
+
+    // ── Render ────────────────────────────────────────────────────────────────
     return (
-        <>
-            <div className="flex gap-3 flex-wrap">
-                <div className="flex-1 min-w-50">
+        <div className="space-y-3">
+            {/* ── Search + filter toggle ─────────────────────────────────── */}
+            <div className="flex gap-2">
+                <div className="flex-1">
                     <Input
                         placeholder="Search projects or skills…"
                         startIcon={<Search className="w-4 h-4" />}
                         value={search}
-                        onChange={(e) => {
-                            setSearch(e.target.value);
-                            setPage(0);
-                        }}
+                        onChange={handleSearchChange}
+                        aria-label="Search projects"
                     />
                 </div>
+
                 <Button
                     variant={showFilters ? "default" : "outline"}
                     size="md"
-                    onClick={() => setShowFilters((s) => !s)}
+                    onClick={() => setShowFilters((prev) => !prev)}
+                    aria-expanded={showFilters}
+                    aria-controls="project-filters-panel"
+                    className="shrink-0 gap-1.5"
                 >
                     <SlidersHorizontal className="w-4 h-4" />
-                    Filters
-                    {hasActiveFilters && (
-                        <span className="ml-1 text-[10px] font-bold bg-primary text-primary-foreground px-1.5 py-0.5 rounded-full">
-                            {
-                                [category, status, budgetMin, budgetMax].filter(
-                                    Boolean,
-                                ).length
-                            }
+                    <span className="hidden sm:inline">Filters</span>
+                    {activeCount > 0 && (
+                        <span className="ml-0.5 text-[10px] font-bold bg-primary-foreground text-primary px-1.5 py-0.5 rounded-full leading-none">
+                            {activeCount}
                         </span>
                     )}
                 </Button>
             </div>
 
-            {/* Expanded filters */}
+            {/* ── Active filter chips (always visible when filters set) ──── */}
+            {hasActiveFilters && !showFilters && (
+                <div className="flex items-center gap-1.5 flex-wrap">
+                    {categoryLabel && (
+                        <FilterChip
+                            label={categoryLabel}
+                            onRemove={() => { setCategory(""); setPage(0); }}
+                        />
+                    )}
+                    {statusLabel && (
+                        <FilterChip
+                            label={statusLabel}
+                            onRemove={() => { setStatus(""); setPage(0); }}
+                        />
+                    )}
+                    {budgetLabel && (
+                        <FilterChip label={budgetLabel} onRemove={removeBudget} />
+                    )}
+                    <button
+                        type="button"
+                        onClick={clearFilters}
+                        className="text-xs text-muted-foreground hover:text-foreground transition-colors ml-0.5 underline underline-offset-2"
+                    >
+                        Clear all
+                    </button>
+                </div>
+            )}
+
+            {/* ── Expanded filter panel ──────────────────────────────────── */}
             {showFilters && (
-                <Card>
-                    <CardContent className="p-4">
-                        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <div>
-                                <label className="text-xs font-semibold text-muted-foreground mb-1.5 block uppercase tracking-wider">
+                <Card id="project-filters-panel" className="border-border/80">
+                    <CardContent className="p-4 space-y-4">
+                        <div className="grid grid-cols-2 gap-3">
+                            {/* Category */}
+                            <div className="space-y-1.5">
+                                <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                                     Category
                                 </label>
                                 <Select
                                     value={category}
-                                    onChange={(e) => {
-                                        setCategory(
-                                            e.target.value as
-                                                | ProjectCategory
-                                                | "",
-                                        );
-                                        setPage(0);
-                                    }}
+                                    onChange={handleCategoryChange}
                                     placeholder="All Categories"
                                     options={CATEGORY_OPTIONS}
                                 />
                             </div>
-                            <div>
-                                <label className="text-xs font-semibold text-muted-foreground mb-1.5 block uppercase tracking-wider">
+
+                            {/* Status */}
+                            <div className="space-y-1.5">
+                                <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                                     Status
                                 </label>
                                 <Select
                                     value={status}
-                                    onChange={(e) => {
-                                        setStatus(
-                                            e.target.value as
-                                                | ProjectStatus
-                                                | "",
-                                        );
-                                        setPage(0);
-                                    }}
+                                    onChange={handleStatusChange}
                                     placeholder="All Statuses"
                                     options={STATUS_OPTIONS}
                                 />
                             </div>
-                            <div>
-                                <label className="text-xs font-semibold text-muted-foreground mb-1.5 block uppercase tracking-wider">
-                                    Budget Min ($)
+
+                            {/* Budget Min */}
+                            <div className="space-y-1.5">
+                                <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                                    Min Budget ($)
                                 </label>
                                 <Input
                                     type="number"
-                                    placeholder="500"
+                                    placeholder="e.g. 500"
                                     value={budgetMin}
-                                    onChange={(e) => {
-                                        setBudgetMin(e.target.value);
-                                        setPage(0);
-                                    }}
+                                    onChange={handleBudgetMinChange}
+                                    min={0}
+                                    aria-label="Minimum budget"
                                 />
                             </div>
-                            <div>
-                                <label className="text-xs font-semibold text-muted-foreground mb-1.5 block uppercase tracking-wider">
-                                    Budget Max ($)
+
+                            {/* Budget Max */}
+                            <div className="space-y-1.5">
+                                <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                                    Max Budget ($)
                                 </label>
                                 <Input
                                     type="number"
-                                    placeholder="5000"
+                                    placeholder="e.g. 5,000"
                                     value={budgetMax}
-                                    onChange={(e) => {
-                                        setBudgetMax(e.target.value);
-                                        setPage(0);
-                                    }}
+                                    onChange={handleBudgetMaxChange}
+                                    min={0}
+                                    aria-label="Maximum budget"
                                 />
                             </div>
                         </div>
+
+                        {/* Active chips + clear all inside the panel */}
                         {hasActiveFilters && (
-                            <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border">
-                                <span className="text-xs text-muted-foreground">
-                                    Active filters:
+                            <div className="flex items-center gap-2 pt-3 border-t border-border flex-wrap">
+                                <span className="text-[11px] font-medium text-muted-foreground shrink-0">
+                                    Active:
                                 </span>
-                                {category && (
-                                    <button
-                                        onClick={() => setCategory("")}
-                                        className="flex items-center gap-1 text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full hover:bg-muted/80"
-                                    >
-                                        {
-                                            CATEGORY_OPTIONS.find(
-                                                (o) => o.value === category,
-                                            )?.label
-                                        }
-                                        <X className="w-3 h-3" />
-                                    </button>
+
+                                {categoryLabel && (
+                                    <FilterChip
+                                        label={categoryLabel}
+                                        onRemove={() => { setCategory(""); setPage(0); }}
+                                    />
                                 )}
-                                {status && (
-                                    <button
-                                        onClick={() => setStatus("")}
-                                        className="flex items-center gap-1 text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full hover:bg-muted/80"
-                                    >
-                                        {
-                                            STATUS_OPTIONS.find(
-                                                (o) => o.value === status,
-                                            )?.label
-                                        }
-                                        <X className="w-3 h-3" />
-                                    </button>
+                                {statusLabel && (
+                                    <FilterChip
+                                        label={statusLabel}
+                                        onRemove={() => { setStatus(""); setPage(0); }}
+                                    />
                                 )}
+                                {budgetLabel && (
+                                    <FilterChip label={budgetLabel} onRemove={removeBudget} />
+                                )}
+
                                 <Button
                                     variant="ghost"
                                     size="sm"
                                     onClick={clearFilters}
-                                    className="ml-auto text-xs"
+                                    className="ml-auto text-xs text-muted-foreground h-7"
                                 >
                                     Clear all
                                 </Button>
@@ -184,6 +265,6 @@ export const ProjectFilter = ({
                     </CardContent>
                 </Card>
             )}
-        </>
+        </div>
     );
-};
+}

@@ -1,149 +1,237 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { Search, SlidersHorizontal, X, Briefcase } from "lucide-react";
-import { Button, Input, Select, EmptyState } from "@/components/ui";
-import { CATEGORY_OPTIONS, STATUS_OPTIONS } from "@/lib/utils";
-import { useProjects } from "@/modules/projects/hooks/useProject";
-import type { ProjectCategory, ProjectStatus, ProjectFilters } from "@/types";
-import { ProjectListItem } from "./ProjectListItem";
-import { Pagination } from "./Pagination";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Briefcase } from "lucide-react";
 
-const PAGE_SIZE = 10; // Updated to match API default
+import { useProjects } from "../hooks/useProject";
+import { ProjectListItem } from "./ProjectListItem";
+import { ProjectFilter } from "./ProjectFilters";
+import { Pagination } from "../../shared/components/Pagination";
+import { Button } from "@/modules/shared/components/button";
+import { EmptyState } from "@/modules/shared/components/empty-state";
+import { ProjectCategory, ProjectFilters, ProjectStatus } from "../types";
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const PAGE_SIZE = 10;
+const SKELETON_COUNT = 6;
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface ProjectListPanelProps {
-  selectedId: string;
-  onSelect: (id: string) => void;
+    selectedId: string;
+    /** User explicitly selected a project (e.g. via click). */
+    onSelect: (id: string) => void;
+    /**
+     * The panel auto-selected a project (e.g. first item on load/filter change).
+     * Defaults to `onSelect` when not provided.
+     * Separate from `onSelect` so the parent can decide whether to open
+     * the detail panel on mobile on auto-selection.
+     */
+    onAutoSelect?: (id: string) => void;
 }
 
-export function ProjectListPanel({ selectedId, onSelect }: ProjectListPanelProps) {
-  const [search, setSearch] = useState("");
-  const [category, setCategory] = useState<ProjectCategory | "">("");
-  const [status, setStatus] = useState<ProjectStatus | "">("");
-  const [budgetMin, setBudgetMin] = useState<number | "">("");
-  const [budgetMax, setBudgetMax] = useState<number | "">("");
-  const [showFilters, setShowFilters] = useState(false);
-  const [page, setPage] = useState(0);
+// ─── Sub-components ───────────────────────────────────────────────────────────
 
-  // Build API filters - page is 0-indexed for standard backend APIs
-  const filters: ProjectFilters = useMemo(
-    () => ({
-      page, 
-      size: PAGE_SIZE,
-      category: category || undefined,
-      status: status || undefined,
-      budgetMin: budgetMin || undefined,
-      budgetMax: budgetMax || undefined,
-      skill: search || undefined,
-      search: search || undefined,
-    }),
-    [page, category, status, budgetMin, budgetMax, search]
-  );
+/** Animated skeleton rows shown while the project list is loading. */
+function ProjectListSkeleton() {
+    return (
+        <div className="flex flex-col divide-y divide-border/60 animate-pulse">
+            {Array.from({ length: SKELETON_COUNT }).map((_, i) => (
+                <div key={i} className="px-5 py-5 space-y-3">
+                    {/* Badge row */}
+                    <div className="flex gap-2">
+                        <div className="h-5 w-20 bg-muted rounded-full" />
+                        <div className="h-5 w-16 bg-muted rounded-full" />
+                    </div>
+                    {/* Title */}
+                    <div className="h-4 bg-muted rounded w-5/6" />
+                    <div className="h-4 bg-muted rounded w-3/4" />
+                    {/* Skills */}
+                    <div className="flex gap-1.5 pt-0.5">
+                        <div className="h-5 w-14 bg-muted rounded-full" />
+                        <div className="h-5 w-18 bg-muted rounded-full" />
+                        <div className="h-5 w-12 bg-muted rounded-full" />
+                    </div>
+                    {/* Footer */}
+                    <div className="flex justify-between pt-0.5">
+                        <div className="h-3.5 w-24 bg-muted rounded" />
+                        <div className="h-3.5 w-20 bg-muted rounded" />
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+}
 
-  const { data, isLoading, error } = useProjects(filters);
+// ─── Component ────────────────────────────────────────────────────────────────
 
-  const totalPages = data?.totalPages ?? 0;
-  const projects = data?.content ?? [];
+export function ProjectListPanel({
+    selectedId,
+    onSelect,
+    onAutoSelect,
+}: ProjectListPanelProps) {
+    // ── Filter state ───────────────────────────────────────────────────────────
+    const [search, setSearch] = useState("");
+    const [category, setCategory] = useState<ProjectCategory | "">("");
+    const [status, setStatus] = useState<ProjectStatus | "">("");
+    const [budgetMin, setBudgetMin] = useState("");
+    const [budgetMax, setBudgetMax] = useState("");
+    const [page, setPage] = useState(0);
 
-  // Auto-select the first project if nothing is selected yet
-  useEffect(() => {
-    if (projects.length > 0 && !selectedId) {
-        onSelect(projects[0].id);
+    // ── Derived / memoised values ──────────────────────────────────────────────
+    const filters: ProjectFilters = useMemo(
+        () => ({
+            page,
+            size: PAGE_SIZE,
+            category: category || undefined,
+            status: status || undefined,
+            budgetMin: budgetMin ? Number(budgetMin) : undefined,
+            budgetMax: budgetMax ? Number(budgetMax) : undefined,
+            search: search || undefined,
+            skill: search || undefined,
+        }),
+        [page, category, status, budgetMin, budgetMax, search],
+    );
+
+    const hasActiveFilters = useMemo(
+        () => [category, status, budgetMin, budgetMax, search].some(Boolean),
+        [category, status, budgetMin, budgetMax, search],
+    );
+
+    // ── Data fetching ──────────────────────────────────────────────────────────
+    const { data, isLoading, error } = useProjects(filters);
+
+    const projects = data?.content ?? [];
+    const totalPages = data?.totalPages ?? 0;
+    const totalElements = data?.totalElements ?? 0;
+
+    // ── Side-effects ───────────────────────────────────────────────────────────
+
+    /**
+     * Auto-select the first project whenever the list refreshes and nothing is
+     * selected (e.g. initial load, filter change clears current selection).
+     */
+    useEffect(() => {
+        if (projects.length > 0 && !selectedId) {
+            const autoSelectFn = onAutoSelect ?? onSelect;
+            autoSelectFn(projects[0].id);
+        }
+    }, [projects, selectedId, onSelect, onAutoSelect]);
+
+    // ── Handlers ──────────────────────────────────────────────────────────────
+    const clearFilters = useCallback(() => {
+        setCategory("");
+        setStatus("");
+        setBudgetMin("");
+        setBudgetMax("");
+        setSearch("");
+        setPage(0);
+    }, []);
+
+    // ── Error state ────────────────────────────────────────────────────────────
+    if (error) {
+        return (
+            <div className="flex flex-col flex-1 items-center justify-center gap-4 p-8 text-center">
+                <p className="text-sm font-medium text-destructive">
+                    Failed to load projects.
+                </p>
+                <p className="text-xs text-muted-foreground">
+                    Check your connection and try again.
+                </p>
+                <Button variant="outline" size="sm" onClick={clearFilters}>
+                    Reset & retry
+                </Button>
+            </div>
+        );
     }
-  }, [projects, selectedId, onSelect]);
 
-  const activeFilterCount = [category, status, budgetMin, budgetMax, search].filter(Boolean).length;
-  const hasActiveFilters = activeFilterCount > 0;
+    // ── Render ─────────────────────────────────────────────────────────────────
+    return (
+        <div className="flex flex-col h-full min-h-0">
 
-  const clearFilters = () => {
-    setCategory("");
-    setStatus("");
-    setBudgetMin("");
-    setBudgetMax("");
-    setSearch("");
-    setPage(0);
-  };
+            {/* ── Header ──────────────────────────────────────────────────── */}
+            <div className="px-5 py-4 border-b border-border shrink-0 space-y-4">
+                <div className="flex items-baseline justify-between gap-2">
+                    <h2 className="text-base font-bold text-foreground tracking-tight">
+                        Browse Projects
+                    </h2>
+                    {!isLoading && (
+                        <span className="text-xs font-medium text-muted-foreground tabular-nums">
+                            {totalElements.toLocaleString()}{" "}
+                            {totalElements === 1 ? "result" : "results"}
+                        </span>
+                    )}
+                </div>
 
-  if (error) {
-    return <div className="p-4 text-sm text-destructive">Failed to load projects.</div>;
-  }
+                <ProjectFilter
+                    search={search}
+                    setSearch={setSearch}
+                    category={category}
+                    setCategory={setCategory}
+                    status={status}
+                    setStatus={setStatus}
+                    budgetMin={budgetMin}
+                    setBudgetMin={setBudgetMin}
+                    budgetMax={budgetMax}
+                    setBudgetMax={setBudgetMax}
+                    setPage={setPage}
+                    hasActiveFilters={hasActiveFilters}
+                    clearFilters={clearFilters}
+                />
+            </div>
 
-  return (
-    <div className="flex flex-col h-full min-h-0">
-      {/* Header */}
-      <div className="px-4 py-3 border-b border-border shrink-0">
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <h2 className="text-sm font-bold text-foreground">Browse Projects</h2>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
-              {data?.totalElements ?? 0} results
-            </p>
-          </div>
-          <Button
-            variant={showFilters ? "default" : "outline"}
-            size="sm"
-            onClick={() => setShowFilters((s) => !s)}
-            className="h-8 px-2.5 text-xs gap-1.5"
-          >
-            <SlidersHorizontal className="w-3.5 h-3.5" />
-            Filters
-            {hasActiveFilters && (
-              <span className="text-[10px] font-bold bg-primary-foreground text-primary px-1.5 py-0.5 rounded-full leading-none">
-                {activeFilterCount}
-              </span>
+            {/* ── Project list ─────────────────────────────────────────────── */}
+            <div className="flex-1 overflow-y-auto min-h-0">
+                {isLoading ? (
+                    <ProjectListSkeleton />
+                ) : projects.length === 0 ? (
+                    <div className="flex items-center justify-center h-full min-h-60 p-6">
+                        <EmptyState
+                            icon={<Briefcase className="w-5 h-5" />}
+                            title="No projects found"
+                            description={
+                                hasActiveFilters
+                                    ? "No projects match your current filters."
+                                    : "There are no projects available right now."
+                            }
+                            action={
+                                hasActiveFilters ? (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={clearFilters}
+                                    >
+                                        Clear filters
+                                    </Button>
+                                ) : undefined
+                            }
+                        />
+                    </div>
+                ) : (
+                    <div className="divide-y divide-border/60">
+                        {projects.map((project) => (
+                            <ProjectListItem
+                                key={project.id}
+                                project={project}
+                                isSelected={project.id === selectedId}
+                                onSelect={onSelect}
+                            />
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {/* ── Pagination ───────────────────────────────────────────────── */}
+            {totalPages > 1 && (
+                <div className="shrink-0 border-t border-border py-2.5 px-3">
+                    <Pagination
+                        page={page}
+                        totalPages={totalPages}
+                        onPageChange={setPage}
+                    />
+                </div>
             )}
-          </Button>
         </div>
-
-        <Input
-          placeholder="Search projects or skills…"
-          startIcon={<Search className="w-3.5 h-3.5" />}
-          value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(0); }}
-          className="h-8 text-sm"
-        />
-      </div>
-
-      {/* Expandable filters - kept identical to your code */}
-      {showFilters && (
-        <div className="px-4 py-3 border-b border-border bg-muted/30 shrink-0 space-y-2.5">
-            {/* ... Your existing filter UI code here ... */}
-        </div>
-      )}
-
-      {/* Project list */}
-      <div className="flex-1 overflow-y-auto min-h-0">
-        {isLoading ? (
-          <div className="p-6 text-sm text-muted-foreground flex items-center justify-center">
-             Loading projects…
-          </div>
-        ) : projects.length === 0 ? (
-          <div className="p-6">
-            <EmptyState
-              icon={<Briefcase className="w-5 h-5" />}
-              title="No projects found"
-              description="Try adjusting your filters."
-              action={<Button variant="outline" size="sm" onClick={clearFilters}>Clear filters</Button>}
-            />
-          </div>
-        ) : (
-          projects.map((project) => (
-            <ProjectListItem
-              key={project.id}
-              project={project}
-              isSelected={project.id === selectedId}
-              onSelect={onSelect}
-            />
-          ))
-        )}
-      </div>
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="shrink-0 border-t border-border py-2 px-2">
-          <Pagination page={page} totalPages={totalPages} setPage={setPage} />
-        </div>
-      )}
-    </div>
-  );
+    );
 }

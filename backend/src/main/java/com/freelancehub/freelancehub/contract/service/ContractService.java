@@ -1,13 +1,19 @@
 package com.freelancehub.freelancehub.contract.service;
 
 import com.freelancehub.freelancehub.bid.domain.Bid;
+import com.freelancehub.freelancehub.bid.service.BidService;
 import com.freelancehub.freelancehub.contract.domain.Contract;
 import com.freelancehub.freelancehub.contract.domain.ContractStatus;
 import com.freelancehub.freelancehub.contract.dto.ContractResponse;
 import com.freelancehub.freelancehub.contract.repository.ContractRepository;
 import com.freelancehub.freelancehub.exception.NotFoundException;
 import com.freelancehub.freelancehub.exception.UnauthorizedException;
+import com.freelancehub.freelancehub.notification.domain.NotificationType;
+import com.freelancehub.freelancehub.notification.service.EmailTemplates;
+import com.freelancehub.freelancehub.notification.service.NotificationService;
+import com.freelancehub.freelancehub.payment.service.PaymentService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,14 +26,28 @@ import java.util.List;
 public class ContractService {
 
     private final ContractRepository contractRepository;
+    private final PaymentService paymentService;
+    private final NotificationService notificationService;
+
+    @Value("${app.frontend-url}")
+    private String frontendUrl;
 
     // ── Called by BidService on bid acceptance ────────────────────
 
     @Transactional
     public ContractResponse createContract(Bid bid) {
         Contract contract = new Contract();
+
+        LocalDate startDate = LocalDate.now();
+        Integer durationDays = bid.getEstimatedDays();
+
+        if (durationDays == null || durationDays <= 0) {
+            throw new IllegalStateException("Invalid bid duration");
+        }
+
         contract.setAgreedPrice(bid.getProposedPrice());
-        contract.setStartDate(LocalDate.now());
+        contract.setStartDate(startDate);
+        contract.setEndDate(startDate.plusDays(durationDays)); // ✅ computed
         contract.setStatus(ContractStatus.ACTIVE);
         contract.setBid(bid);
 
@@ -73,20 +93,55 @@ public class ContractService {
         return toResponse(contract);
     }
 
+    @Transactional
+    public ContractResponse completeContractInternal(String contractId, String clientId) {
+        Contract contract = findContractById(contractId);
+        assertClient(contract, clientId);
+        if (contract.getStatus() != ContractStatus.ACTIVE) {
+            throw new IllegalStateException("Only ACTIVE contracts can be completed");
+        }
+        contract.setStatus(ContractStatus.COMPLETED);
+        contract.setEndDate(LocalDate.now());
+        contractRepository.save(contract);
+        return toResponse(contract);
+    }
+
     // ── Both parties: cancel contract ────────────────────────────
 
     @Transactional
     public ContractResponse cancelContract(String contractId, String userId) {
         Contract contract = findContractById(contractId);
-
         assertParty(contract, userId);
-
         if (contract.getStatus() != ContractStatus.ACTIVE) {
             throw new IllegalStateException("Only ACTIVE contracts can be cancelled");
         }
-
+        // Refund before status change so milestones are still in refundable states
+        paymentService.refundAllFundedMilestones(contractId);
         contract.setStatus(ContractStatus.CANCELLED);
         contract.setEndDate(LocalDate.now());
+        contractRepository.save(contract);
+
+        String projectTitle = contract.getBid().getProject().getTitle();
+        String clientId     = contract.getBid().getProject().getClient().getId();
+        String freelancerId = contract.getBid().getFreelancer().getId();
+        String contractUrl  = frontendUrl + "/client/contracts/" + contractId;
+
+        notificationService.notifyWithEmail(
+                clientId, NotificationType.CONTRACT_CANCELLED,
+                "Contract cancelled", "The contract for \"" + projectTitle + "\" has been cancelled.",
+                contractId, "CONTRACT",
+                "Contract cancelled", EmailTemplates.contractCancelled(
+                        contract.getBid().getProject().getClient().getName(), projectTitle, contractUrl)
+        );
+        notificationService.notifyWithEmail(
+                freelancerId, NotificationType.CONTRACT_CANCELLED,
+                "Contract cancelled", "The contract for \"" + projectTitle + "\" has been cancelled.",
+                contractId, "CONTRACT",
+                "Contract cancelled", EmailTemplates.contractCancelled(
+                        contract.getBid().getFreelancer().getName(), projectTitle,
+                        frontendUrl + "/freelancer/contracts/" + contractId)
+        );
+
         return toResponse(contract);
     }
 
@@ -103,6 +158,28 @@ public class ContractService {
         }
 
         contract.setStatus(ContractStatus.DISPUTED);
+
+        String projectTitle = contract.getBid().getProject().getTitle();
+        String clientId     = contract.getBid().getProject().getClient().getId();
+        String freelancerId = contract.getBid().getFreelancer().getId();
+        String contractUrl  = frontendUrl + "/client/contracts/" + contractId;
+
+        notificationService.notifyWithEmail(
+                clientId, NotificationType.CONTRACT_DISPUTED,
+                "Contract disputed", "The contract for \"" + projectTitle + "\" is now under dispute.",
+                contractId, "CONTRACT",
+                "Contract disputed", EmailTemplates.contractDisputed(
+                        contract.getBid().getProject().getClient().getName(), projectTitle, contractUrl)
+        );
+        notificationService.notifyWithEmail(
+                freelancerId, NotificationType.CONTRACT_DISPUTED,
+                "Contract disputed", "The contract for \"" + projectTitle + "\" is now under dispute.",
+                contractId, "CONTRACT",
+                "Contract disputed", EmailTemplates.contractDisputed(
+                        contract.getBid().getFreelancer().getName(), projectTitle,
+                        frontendUrl + "/freelancer/contracts/" + contractId)
+        );
+
         return toResponse(contract);
     }
 

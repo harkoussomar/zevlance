@@ -1,0 +1,15 @@
+
+export type Role = "CLIENT" | "FREELANCER" | "ADMIN";
+
+
+  export interface PaginatedResponse<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  number: number;
+  size: number;
+  first: boolean;
+  last: boolean;
+}
+
+

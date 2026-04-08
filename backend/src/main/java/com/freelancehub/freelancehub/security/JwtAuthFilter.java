@@ -2,12 +2,12 @@ package com.freelancehub.freelancehub.security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie; // Import this
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.lang.NonNull;
+import org.jspecify.annotations.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -34,7 +34,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         String jwt = null;
 
-        // 1. Extract JWT from Cookies
         if (request.getCookies() != null) {
             for (Cookie cookie : request.getCookies()) {
                 if ("jwt".equals(cookie.getName())) {
@@ -47,7 +46,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         log.debug("URI: {}", request.getRequestURI());
         log.debug("JWT from cookie found: {}", jwt != null);
 
-        // 2. If no cookie, check for Bearer header (Optional: keep this for Postman testing)
         if (jwt == null) {
             String authHeader = request.getHeader("Authorization");
             if (authHeader != null && authHeader.startsWith("Bearer ")) {
@@ -56,7 +54,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             }
         }
 
-        // 3. If still no JWT, continue the filter chain
         if (jwt == null) {
             log.debug("No token — skipping");
             filterChain.doFilter(request, response);

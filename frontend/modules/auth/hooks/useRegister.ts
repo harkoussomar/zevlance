@@ -1,64 +1,89 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth-store";
-import { authService } from "../auth.service";
 import type {
     RegisterFreelancerSchemaType,
     RegisterClientSchemaType,
 } from "../schemas/register.schema";
-
-import { Role } from "@/types";
-import { RegisterParseApiError } from "../utils/register-parse-api-error";
+import { Role } from "@/modules/shared/types";
 import { toFreelancerPayload } from "../utils/to-freelancer-payload";
 import { toClientPayload } from "../utils/to-client-payload";
-import { ROLE_REDIRECT } from "../utils/role-redirection";
+import { authService } from "../services/auth.service";
+import { parseApiError, ROLE_REDIRECT } from "@/modules/shared";
 
-// Overload for freelancer registration
-// If role is "FREELANCER", the returned register function expects RegisterFreelancerSchemaType
-export function useRegister(role: "FREELANCER"): {
-    register: (data: RegisterFreelancerSchemaType) => Promise<void>;
+interface UseRegisterReturn<TData> {
+    register: (data: TData) => Promise<void>;
     isLoading: boolean;
     serverError: string | null;
-};
+    clearError: () => void;
+}
 
-// Overload for client registration
-// If role is "CLIENT", the returned register function expects RegisterClientSchemaType
-export function useRegister(role: "CLIENT"): {
-    register: (data: RegisterClientSchemaType) => Promise<void>;
-    isLoading: boolean;
-    serverError: string | null;
-};
-
-export function useRegister(role: Role) {
+export function useRegister(
+    role: "FREELANCER",
+): UseRegisterReturn<RegisterFreelancerSchemaType>;
+export function useRegister(
+    role: "CLIENT",
+): UseRegisterReturn<RegisterClientSchemaType>;
+export function useRegister(
+    role: Role,
+): UseRegisterReturn<RegisterFreelancerSchemaType | RegisterClientSchemaType> {
     const router = useRouter();
     const storeLogin = useAuthStore((s) => s.login);
+
     const [isLoading, setIsLoading] = useState(false);
     const [serverError, setServerError] = useState<string | null>(null);
 
-    const register = async (
-        data: RegisterFreelancerSchemaType | RegisterClientSchemaType,
-    ) => {
-        setIsLoading(true);
-        setServerError(null);
+    const abortRef = useRef<AbortController | null>(null);
 
-        try {
-            const authResponse =
-                role === "FREELANCER"
-                    ? await authService.registerFreelancer(
-                          toFreelancerPayload(data),
-                      )
-                    : await authService.registerClient(toClientPayload(data));
+    useEffect(() => {
+        return () => {
+            abortRef.current?.abort();
+        };
+    }, []);
 
-            storeLogin(authResponse);
-            router.push(ROLE_REDIRECT[authResponse.role] ?? "/");
-        } catch (err) {
-            setServerError(RegisterParseApiError(err));
-        } finally {
-            setIsLoading(false);
-        }
-    };
+    const clearError = useCallback(() => setServerError(null), []);
 
-    return { register, isLoading, serverError };
+    const register = useCallback(
+        async (
+            data: RegisterFreelancerSchemaType | RegisterClientSchemaType,
+        ) => {
+            abortRef.current?.abort();
+            const controller = new AbortController();
+            abortRef.current = controller;
+
+            setIsLoading(true);
+            setServerError(null);
+
+            try {
+                const authResponse =
+                    role === "FREELANCER"
+                        ? await authService.registerFreelancer(
+                              toFreelancerPayload(data),
+                              controller.signal,
+                          )
+                        : await authService.registerClient(
+                              toClientPayload(data),
+                              controller.signal,
+                          );
+
+                storeLogin(authResponse);
+                router.push(ROLE_REDIRECT[authResponse.role] ?? "/");
+            } catch (err) {
+                if ((err as Error).name === "AbortError") return;
+                setServerError(
+                    parseApiError(err, {
+                        409: "An account with this email already exists",
+                        400: "Please check your details and try again",
+                    }),
+                );
+            } finally {
+                setIsLoading(false);
+            }
+        },
+        [role, router, storeLogin],
+    );
+
+    return { register, isLoading, serverError, clearError };
 }

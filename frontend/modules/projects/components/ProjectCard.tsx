@@ -1,11 +1,19 @@
-import { CategoryBadge, ProjectStatusBadge } from "@/components/shared/status-badge";
-import { Card, CardContent, SkillTag } from "@/components/ui";
-import { MOCK_PROJECTS } from "@/lib/mock-data";
-import { formatDate, formatRelative } from "@/lib/utils";
+import {
+    CategoryBadge,
+    ProjectStatusBadge,
+} from "@/modules/shared/components/status-badge";
 import { ArrowRight, Clock, DollarSign, Users } from "lucide-react";
 import Link from "next/link";
+import { Card, CardContent } from "@/modules/shared/components/card";
+import { SkillTag } from "@/modules/shared/components/skil-tag";
+import { ProjectSummaryResponse } from "../types";
+import { formatBudget, formatRelative } from "@/modules/shared";
 
-export function ProjectCard({ project }: { project: (typeof MOCK_PROJECTS)[0] }) {
+interface ProjectCardProps {
+    project: ProjectSummaryResponse;
+}
+
+export function ProjectCard({ project }: ProjectCardProps) {
     return (
         <Link href={`/projects/${project.id}`}>
             <Card className="group h-full flex flex-col hover:border-primary/40 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-pointer">
@@ -26,12 +34,12 @@ export function ProjectCard({ project }: { project: (typeof MOCK_PROJECTS)[0] })
 
                     {/* Skills */}
                     <div className="flex gap-1.5 flex-wrap mb-auto pb-4">
-                        {project.requiredSkills.slice(0, 4).map((skill) => (
+                        {project.requiredSkills?.slice(0, 4).map((skill) => (
                             <SkillTag key={skill} skill={skill} />
                         ))}
-                        {project.requiredSkills.length > 4 && (
+                        {(project.requiredSkills?.length ?? 0) > 4 && (
                             <span className="text-[10px] text-muted-foreground font-medium py-0.5">
-                                +{project.requiredSkills.length - 4}
+                                +{(project.requiredSkills?.length ?? 0) - 4}
                             </span>
                         )}
                     </div>
@@ -41,8 +49,10 @@ export function ProjectCard({ project }: { project: (typeof MOCK_PROJECTS)[0] })
                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                             <DollarSign className="w-3 h-3 shrink-0" />
                             <span className="font-semibold text-foreground truncate">
-                                ${project.budgetMin / 1000}K–$
-                                {project.budgetMax / 1000}K
+                                {formatBudget(
+                                    project.budgetMin,
+                                    project.budgetMax,
+                                )}
                             </span>
                         </div>
                         <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -51,23 +61,10 @@ export function ProjectCard({ project }: { project: (typeof MOCK_PROJECTS)[0] })
                         </div>
                         <div className="flex items-center gap-1 text-xs text-muted-foreground justify-end">
                             <Clock className="w-3 h-3 shrink-0" />
-                            <span>{formatDate(project.deadline)}</span>
-                        </div>
-                    </div>
-
-                    {/* Footer */}
-                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
-                        <div className="flex items-center gap-1.5">
-                            <div className="w-5 h-5 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center text-[9px] font-bold text-primary">
-                                {project.clientName[0]}
-                            </div>
-                            <span className="text-xs text-muted-foreground">
-                                {project.clientName}
+                            <span>
+                                {formatRelative(project.createdAt ?? "")}
                             </span>
                         </div>
-                        <span className="text-[10px] text-muted-foreground">
-                            {formatRelative(project.createdAt ?? "")}
-                        </span>
                     </div>
                 </CardContent>
             </Card>

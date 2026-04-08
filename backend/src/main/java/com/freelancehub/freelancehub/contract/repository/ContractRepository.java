@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 public interface ContractRepository extends JpaRepository<Contract, String> {
@@ -28,6 +29,70 @@ public interface ContractRepository extends JpaRepository<Contract, String> {
     boolean isPartyToContract(
             @Param("contractId") String contractId,
             @Param("userId") String userId
+    );
+
+    // Freelancer-specific
+    @Query("""
+    SELECT c FROM Contract c
+    WHERE c.bid.freelancer.id = :freelancerId
+    AND c.status = :status
+    ORDER BY c.startDate DESC
+    LIMIT :limit
+    """)
+    List<Contract> findTopByFreelancerIdAndStatus(
+            @Param("freelancerId") String freelancerId,
+            @Param("status") ContractStatus status,
+            @Param("limit") int limit
+    );
+
+    @Query("""
+    SELECT COALESCE(SUM(c.agreedPrice), 0)
+    FROM Contract c
+    WHERE c.bid.freelancer.id = :freelancerId
+    AND c.status = 'COMPLETED'
+    """)
+    BigDecimal sumEarnedByFreelancerId(@Param("freelancerId") String freelancerId);
+
+    @Query("""
+    SELECT COUNT(c) FROM Contract c
+    WHERE c.bid.freelancer.id = :freelancerId
+    AND c.status = :status
+    """)
+    long countByFreelancerIdAndStatus(
+            @Param("freelancerId") String freelancerId,
+            @Param("status") ContractStatus status
+    );
+
+    // Client-specific
+    @Query("""
+    SELECT c FROM Contract c
+    WHERE c.bid.project.client.id = :clientId
+    AND c.status = :status
+    ORDER BY c.startDate DESC
+    LIMIT :limit
+    """)
+    List<Contract> findTopByClientIdAndStatus(
+            @Param("clientId") String clientId,
+            @Param("status") ContractStatus status,
+            @Param("limit") int limit
+    );
+
+    @Query("""
+    SELECT COALESCE(SUM(c.agreedPrice), 0)
+    FROM Contract c
+    WHERE c.bid.project.client.id = :clientId
+    AND c.status = 'COMPLETED'
+    """)
+    BigDecimal sumSpentByClientId(@Param("clientId") String clientId);
+
+    @Query("""
+    SELECT COUNT(c) FROM Contract c
+    WHERE c.bid.project.client.id = :clientId
+    AND c.status = :status
+    """)
+    long countByClientIdAndStatus(
+            @Param("clientId") String clientId,
+            @Param("status") ContractStatus status
     );
 
     long countByStatus(ContractStatus status);

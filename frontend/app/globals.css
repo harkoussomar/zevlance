@@ -1,107 +1,382 @@
 @import "tailwindcss";
-@plugin "tailwindcss-animate";
+@import "tw-animate-css";
 
-@theme {
-  --color-background: hsl(var(--background));
-  --color-foreground: hsl(var(--foreground));
-  --color-card: hsl(var(--card));
-  --color-card-foreground: hsl(var(--card-foreground));
-  --color-popover: hsl(var(--popover));
-  --color-popover-foreground: hsl(var(--popover-foreground));
-  --color-primary: hsl(var(--primary));
-  --color-primary-foreground: hsl(var(--primary-foreground));
-  --color-secondary: hsl(var(--secondary));
-  --color-secondary-foreground: hsl(var(--secondary-foreground));
-  --color-muted: hsl(var(--muted));
-  --color-muted-foreground: hsl(var(--muted-foreground));
-  --color-accent: hsl(var(--accent));
-  --color-accent-foreground: hsl(var(--accent-foreground));
-  --color-destructive: hsl(var(--destructive));
-  --color-destructive-foreground: hsl(var(--destructive-foreground));
-  --color-border: hsl(var(--border));
-  --color-input: hsl(var(--input));
-  --color-ring: hsl(var(--ring));
-  --radius-lg: var(--radius);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-sm: calc(var(--radius) - 4px);
-  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), monospace;
+/* ─── Fonts ──────────────────────────────────────────────────────────────────
+   Add to your Next.js layout.tsx via next/font/google:
+   
+   import { Bricolage_Grotesque, DM_Sans, DM_Mono } from "next/font/google"
+   
+   const displayFont = Bricolage_Grotesque({
+     subsets: ["latin"],
+     variable: "--font-display",
+     weight: ["400", "500", "600", "700", "800"],
+   })
+   const sansFont = DM_Sans({
+     subsets: ["latin"],
+     variable: "--font-sans",
+     weight: ["300", "400", "500", "600", "700"],
+   })
+   const monoFont = DM_Mono({
+     subsets: ["latin"],
+     variable: "--font-mono",
+     weight: ["300", "400", "500"],
+   })
+──────────────────────────────────────────────────────────────────────────── */
+
+/* ─── Dark variant ───────────────────────────────────────────────────────── */
+@custom-variant dark (&:is(.dark *));
+
+/* ─── Tailwind theme bridge ──────────────────────────────────────────────── */
+@theme inline {
+  /* Colors */
+  --color-background:          var(--background);
+  --color-foreground:          var(--foreground);
+  --color-card:                var(--card);
+  --color-card-foreground:     var(--card-foreground);
+  --color-popover:             var(--popover);
+  --color-popover-foreground:  var(--popover-foreground);
+  --color-primary:             var(--primary);
+  --color-primary-foreground:  var(--primary-foreground);
+  --color-secondary:           var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted:               var(--muted);
+  --color-muted-foreground:    var(--muted-foreground);
+  --color-accent:              var(--accent);
+  --color-accent-foreground:   var(--accent-foreground);
+  --color-destructive:         var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border:              var(--border);
+  --color-input:               var(--input);
+  --color-ring:                var(--ring);
+
+  /* Status colors */
+  --color-success:             var(--success);
+  --color-success-foreground:  var(--success-foreground);
+  --color-warning:             var(--warning);
+  --color-warning-foreground:  var(--warning-foreground);
+  --color-info:                var(--info);
+  --color-info-foreground:     var(--info-foreground);
+
+  /* Role colors */
+  --color-role-client:         var(--role-client);
+  --color-role-freelancer:     var(--role-freelancer);
+  --color-role-admin:          var(--role-admin);
+
+  /* Chart palette */
+  --color-chart-1:             var(--chart-1);
+  --color-chart-2:             var(--chart-2);
+  --color-chart-3:             var(--chart-3);
+  --color-chart-4:             var(--chart-4);
+  --color-chart-5:             var(--chart-5);
+
+  /* Radius scale */
+  --radius-xs:  calc(var(--radius) - 4px);
+  --radius-sm:  calc(var(--radius) - 2px);
+  --radius-md:  var(--radius);
+  --radius-lg:  calc(var(--radius) + 2px);
+  --radius-xl:  calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+
+  /* Typography */
+  --font-display: var(--font-display);
+  --font-sans:    var(--font-sans);
+  --font-mono:    var(--font-mono);
+
+  /* Motion */
+  --duration-fast:       var(--duration-fast);
+  --duration-base:       var(--duration-base);
+  --duration-slow:       var(--duration-slow);
+  --ease-standard:       var(--ease-standard);
+  --ease-decelerate:     var(--ease-decelerate);
+  --ease-accelerate:     var(--ease-accelerate);
+  --ease-spring:         var(--ease-spring);
+
+  /* Shadows */
+  --shadow-sm:  var(--shadow-sm);
+  --shadow-md:  var(--shadow-md);
+  --shadow-lg:  var(--shadow-lg);
+  --shadow-xl:  var(--shadow-xl);
 }
 
-@layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
-    --radius: 0.5rem;
-  }
+/* ═══════════════════════════════════════════════════════════════════════════
+   LIGHT MODE  — "Ivory Atelier"
+   Premium & Restrained. Slightly warm white ground, deep indigo type,
+   pure indigo primary. Whisper, don't shout.
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root {
+  /* ── Primitive scale: Indigo ─────────────────────────────────────────── */
+  --indigo-50:  oklch(0.972 0.012 265);
+  --indigo-100: oklch(0.945 0.026 265);
+  --indigo-200: oklch(0.882 0.058 265);
+  --indigo-300: oklch(0.785 0.108 265);
+  --indigo-400: oklch(0.672 0.165 265);
+  --indigo-500: oklch(0.545 0.215 265);
+  --indigo-600: oklch(0.468 0.218 265);
+  --indigo-700: oklch(0.385 0.188 265);
+  --indigo-800: oklch(0.282 0.138 265);
+  --indigo-900: oklch(0.192 0.088 265);
+  --indigo-950: oklch(0.118 0.052 265);
 
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-  }
+  /* ── Primitive scale: Neutral (indigo-tinted) ────────────────────────── */
+  --neutral-0:   oklch(1 0 0);
+  --neutral-50:  oklch(0.984 0.004 265);
+  --neutral-100: oklch(0.962 0.006 265);
+  --neutral-150: oklch(0.942 0.008 265);
+  --neutral-200: oklch(0.912 0.010 265);
+  --neutral-300: oklch(0.852 0.012 265);
+  --neutral-400: oklch(0.712 0.012 265);
+  --neutral-500: oklch(0.558 0.014 265);
+  --neutral-600: oklch(0.432 0.012 265);
+  --neutral-700: oklch(0.322 0.014 265);
+  --neutral-800: oklch(0.228 0.018 265);
+  --neutral-900: oklch(0.148 0.022 265);
+  --neutral-950: oklch(0.098 0.026 265);
+
+  /* ── Primitive scale: Status ─────────────────────────────────────────── */
+  --green-400:  oklch(0.698 0.168 158);
+  --green-500:  oklch(0.618 0.172 158);
+  --green-600:  oklch(0.532 0.158 158);
+  --amber-400:  oklch(0.752 0.175 72);
+  --amber-500:  oklch(0.702 0.175 72);
+  --amber-600:  oklch(0.618 0.162 72);
+  --red-400:    oklch(0.622 0.218 25);
+  --red-500:    oklch(0.552 0.222 25);
+  --blue-400:   oklch(0.618 0.188 232);
+  --blue-500:   oklch(0.548 0.192 232);
+
+  /* ── Semantic aliases: Light ─────────────────────────────────────────── */
+  --background:          var(--neutral-50);
+  --foreground:          var(--neutral-900);
+
+  --card:                var(--neutral-0);
+  --card-foreground:     var(--neutral-900);
+
+  --popover:             var(--neutral-0);
+  --popover-foreground:  var(--neutral-900);
+
+  --primary:             var(--indigo-500);
+  --primary-foreground:  oklch(0.985 0.006 265);
+
+  --secondary:           var(--neutral-100);
+  --secondary-foreground: var(--neutral-800);
+
+  --muted:               var(--neutral-100);
+  --muted-foreground:    var(--neutral-500);
+
+  --accent:              var(--neutral-100);
+  --accent-foreground:   var(--neutral-800);
+
+  --destructive:         var(--red-500);
+  --destructive-foreground: oklch(0.985 0.008 25);
+
+  --border:              var(--neutral-200);
+  --input:               var(--neutral-200);
+  --ring:                var(--indigo-500);
+
+  /* ── Status tokens ───────────────────────────────────────────────────── */
+  --success:             var(--green-500);
+  --success-foreground:  oklch(0.985 0.008 158);
+  --warning:             var(--amber-500);
+  --warning-foreground:  oklch(0.22 0.055 72);
+  --info:                var(--blue-500);
+  --info-foreground:     oklch(0.985 0.008 232);
+
+  /* ── Role tokens ─────────────────────────────────────────────────────── */
+  --role-client:         var(--blue-500);
+  --role-freelancer:     var(--green-500);
+  --role-admin:          oklch(0.558 0.198 335);
+
+  /* ── Chart palette ───────────────────────────────────────────────────── */
+  --chart-1:             var(--indigo-500);
+  --chart-2:             var(--green-500);
+  --chart-3:             var(--amber-500);
+  --chart-4:             var(--blue-500);
+  --chart-5:             oklch(0.558 0.198 335);
+
+  /* ── Radius ──────────────────────────────────────────────────────────── */
+  --radius: 0.5rem;
+
+  /* ── Motion ──────────────────────────────────────────────────────────── */
+  --duration-fast:   100ms;
+  --duration-base:   200ms;
+  --duration-slow:   300ms;
+  --ease-standard:   cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-decelerate: cubic-bezier(0, 0, 0.2, 1);
+  --ease-accelerate: cubic-bezier(0.4, 0, 1, 1);
+  --ease-spring:     cubic-bezier(0.175, 0.885, 0.32, 1.075);
+
+  /* ── Typography ──────────────────────────────────────────────────────── */
+  --font-display: "Bricolage Grotesque", system-ui, sans-serif;
+  --font-sans:    "DM Sans", system-ui, sans-serif;
+  --font-mono:    "DM Mono", "Fira Code", ui-monospace, monospace;
+
+  /* ── Shadows (light) ─────────────────────────────────────────────────── */
+  --shadow-sm:  0 1px 2px 0 oklch(0.148 0.022 265 / 0.05);
+  --shadow-md:  0 4px 6px -1px oklch(0.148 0.022 265 / 0.07),
+                0 2px 4px -2px oklch(0.148 0.022 265 / 0.04);
+  --shadow-lg:  0 10px 15px -3px oklch(0.148 0.022 265 / 0.08),
+                0 4px 6px -4px oklch(0.148 0.022 265 / 0.04);
+  --shadow-xl:  0 20px 25px -5px oklch(0.148 0.022 265 / 0.10),
+                0 8px 10px -6px oklch(0.148 0.022 265 / 0.04);
+
+  /* ── Sidebar width tokens ────────────────────────────────────────────── */
+  --sidebar-width:           15rem;
+  --sidebar-width-collapsed: 4rem;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   DARK MODE  — "Indigo Noir"
+   Deep indigo-tinted darkness. Primary brightens slightly for contrast.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.dark {
+  --background:          oklch(0.112 0.022 265);
+  --foreground:          oklch(0.924 0.010 265);
+
+  --card:                oklch(0.148 0.024 265);
+  --card-foreground:     oklch(0.924 0.010 265);
+
+  --popover:             oklch(0.148 0.024 265);
+  --popover-foreground:  oklch(0.924 0.010 265);
+
+  --primary:             oklch(0.625 0.195 265);
+  --primary-foreground:  oklch(0.098 0.026 265);
+
+  --secondary:           oklch(0.205 0.028 265);
+  --secondary-foreground: oklch(0.862 0.012 265);
+
+  --muted:               oklch(0.188 0.024 265);
+  --muted-foreground:    oklch(0.575 0.018 265);
+
+  --accent:              oklch(0.205 0.028 265);
+  --accent-foreground:   oklch(0.862 0.012 265);
+
+  --destructive:         oklch(0.625 0.215 25);
+  --destructive-foreground: oklch(0.985 0.008 25);
+
+  --border:              oklch(0.232 0.030 265);
+  --input:               oklch(0.222 0.028 265);
+  --ring:                oklch(0.625 0.195 265);
+
+  /* ── Status tokens (dark-adjusted for contrast) ──────────────────────── */
+  --success:             oklch(0.698 0.168 158);
+  --success-foreground:  oklch(0.112 0.022 158);
+  --warning:             oklch(0.752 0.175 72);
+  --warning-foreground:  oklch(0.148 0.048 72);
+  --info:                oklch(0.655 0.185 232);
+  --info-foreground:     oklch(0.098 0.022 232);
+
+  /* ── Role tokens ─────────────────────────────────────────────────────── */
+  --role-client:         oklch(0.655 0.185 232);
+  --role-freelancer:     oklch(0.698 0.168 158);
+  --role-admin:          oklch(0.638 0.195 335);
+
+  /* ── Shadows (dark — colored for depth) ─────────────────────────────── */
+  --shadow-sm:  0 1px 2px 0 oklch(0 0 0 / 0.28);
+  --shadow-md:  0 4px 6px -1px oklch(0 0 0 / 0.38),
+                0 2px 4px -2px oklch(0 0 0 / 0.22);
+  --shadow-lg:  0 10px 15px -3px oklch(0 0 0 / 0.42),
+                0 4px 6px -4px oklch(0 0 0 / 0.24);
+  --shadow-xl:  0 20px 25px -5px oklch(0 0 0 / 0.50),
+                0 8px 10px -6px oklch(0 0 0 / 0.28);
+}
+
+/* ─── Base layer ─────────────────────────────────────────────────────────── */
 @layer base {
-  * {
-    @apply border-border;
+  *,
+  *::before,
+  *::after {
+    border-color: var(--border);
+    box-sizing: border-box;
   }
+
+  html {
+    scroll-behavior: smooth;
+    text-size-adjust: 100%;
+  }
+
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1;
+    font-synthesis: none;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
-  ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+
+  /* Display headings use Bricolage Grotesque */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    line-height: 1.15;
   }
-  ::-webkit-scrollbar-track {
-    @apply bg-transparent;
+
+  h1 { font-size: clamp(2.25rem, 5vw + 1rem, 4.5rem); }
+  h2 { font-size: clamp(1.75rem, 3.5vw + 0.5rem, 3rem); }
+  h3 { font-size: clamp(1.25rem, 2vw + 0.25rem, 1.875rem); }
+  h4 { font-size: 1.25rem; }
+  h5 { font-size: 1.125rem; }
+  h6 { font-size: 1rem; }
+
+  code,
+  kbd,
+  pre,
+  samp {
+    font-family: var(--font-mono);
+    font-size: 0.9em;
   }
-  ::-webkit-scrollbar-thumb {
-    @apply bg-border rounded-full;
+
+  /* Focus ring */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
   }
-  ::-webkit-scrollbar-thumb:hover {
-    @apply bg-muted-foreground/30;
+
+  /* Selection */
+  ::selection {
+    background-color: oklch(from var(--primary) l c h / 0.2);
+    color: var(--foreground);
   }
+
+  /* Scrollbar (webkit) */
+  ::-webkit-scrollbar        { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track  { background: transparent; }
+  ::-webkit-scrollbar-thumb  { background: var(--border); border-radius: 9999px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--muted-foreground); }
 }
 
-/* Scrollbar hide utility */
-.scrollbar-none::-webkit-scrollbar {
-  display: none;
-}
-.scrollbar-none {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+/* ─── Utility layer ──────────────────────────────────────────────────────── */
+@layer utilities {
+  /* Hide scrollbar */
+  .scrollbar-none {
+    scrollbar-width: none;
+    &::-webkit-scrollbar { display: none; }
+  }
+
+  /* Font utilities */
+  .font-display { font-family: var(--font-display); }
+  .font-sans    { font-family: var(--font-sans); }
+  .font-mono    { font-family: var(--font-mono); }
+
+  /* Motion utilities */
+  .transition-base {
+    transition-duration: var(--duration-base);
+    transition-timing-function: var(--ease-standard);
+  }
+  .transition-fast {
+    transition-duration: var(--duration-fast);
+    transition-timing-function: var(--ease-standard);
+  }
+  .transition-slow {
+    transition-duration: var(--duration-slow);
+    transition-timing-function: var(--ease-decelerate);
+  }
 }

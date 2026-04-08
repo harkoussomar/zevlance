@@ -1,5 +1,4 @@
-import { LeftDecorativePanel } from "@/modules/auth/components/LeftDecorativePanel";
-import { SignupFlow } from "@/modules/auth/components/SignupFlow";
+import { LeftDecorativePanel, SignupFlow } from "@/modules/auth";
 
 
 

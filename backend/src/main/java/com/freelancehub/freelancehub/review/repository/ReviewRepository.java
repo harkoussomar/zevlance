@@ -22,4 +22,18 @@ public interface ReviewRepository extends JpaRepository<Review, String> {
     // Overall average rating across all reviews (for stats)
     @Query("SELECT AVG(r.rating) FROM Review r")
     Double calculateOverallAverageRating();
+
+
+    long countByRevieweeId(String revieweeId);
+
+    @Query("""
+    SELECT r FROM Review r
+    WHERE r.reviewee.id = :revieweeId
+    ORDER BY r.createdAt DESC
+    LIMIT :limit
+    """)
+    List<Review> findTopByRevieweeId(
+            @Param("revieweeId") String revieweeId,
+            @Param("limit") int limit
+    );
 }

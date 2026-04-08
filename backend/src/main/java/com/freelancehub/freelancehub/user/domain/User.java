@@ -19,9 +19,7 @@ import java.util.List;
 @Table(name = "users")
 @Inheritance(strategy = InheritanceType.JOINED)
 @DiscriminatorColumn(name = "role", discriminatorType = DiscriminatorType.STRING)
-@Getter
-@Setter
-@NoArgsConstructor
+@Getter @Setter @NoArgsConstructor
 @SuppressWarnings("NullableProblems")
 public abstract class User implements UserDetails {
 
@@ -42,6 +40,10 @@ public abstract class User implements UserDetails {
     @Column(length = 20)
     private String phone;
 
+    // Moved here from Freelancer so both CLIENT and FREELANCER can have avatars.
+    @Column(length = 512)
+    private String profilePicture;
+
     /**
      * insertable/updatable = false: Hibernate manages this column via the
      * discriminator. Each subclass constructor sets it eagerly so the
@@ -55,6 +57,9 @@ public abstract class User implements UserDetails {
     @Column(nullable = false)
     private boolean active = true;
 
+    @Column(nullable = false)
+    private boolean emailVerified = false;
+
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;
@@ -62,7 +67,7 @@ public abstract class User implements UserDetails {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
-    // ── UserDetails ───────────────────────────────────────────────
+    // ── UserDetails ───────────────────────────────────────────────────────────
 
     @Override
     public String getUsername() {

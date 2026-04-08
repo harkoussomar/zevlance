@@ -1,14 +1,20 @@
-import { BadgeCheck, FileText, GitBranch, LayoutDashboard, Scale, Shield } from "lucide-react";
-
+import { Card } from "@/modules/shared/components/card";
+import { SectionLabel } from "@/modules/shared/components/section-label";
+import {
+    BadgeCheck,
+    FileText,
+    GitBranch,
+    LayoutDashboard,
+    Scale,
+    Shield,
+} from "lucide-react";
 
 interface FeatureItem {
     icon: React.ReactNode;
     title: string;
     description: string;
-    accent?: "primary" | "green" | "amber" | "rose";
+    semanticToken: "primary" | "success" | "warning" | "destructive";
 }
-
-
 
 const FEATURES: FeatureItem[] = [
     {
@@ -16,74 +22,64 @@ const FEATURES: FeatureItem[] = [
         title: "Milestone Contracts",
         description:
             "Break any project into paid milestones. Submit deliverables, get client approval, release funds. No invoice chasing — ever.",
-        accent: "primary",
+        semanticToken: "primary",
     },
     {
         icon: <FileText className="w-5 h-5" />,
         title: "Structured Bidding",
         description:
             "Every proposal includes price, estimated timeline, and a cover letter. Clients compare apples to apples — not chaos to chaos.",
-        accent: "green",
+        semanticToken: "success",
     },
     {
         icon: <BadgeCheck className="w-5 h-5" />,
         title: "Verified Profiles",
         description:
             "Skill badges, ratings, and work history from real completed contracts. Trust is earned here, not assumed or bought.",
-        accent: "amber",
+        semanticToken: "warning",
     },
     {
         icon: <Scale className="w-5 h-5" />,
         title: "Dispute Resolution",
         description:
             "Fair mediation when contracts hit complications. Both parties get a voice. Outcomes are equitable and documented.",
-        accent: "rose",
+        semanticToken: "destructive",
     },
     {
         icon: <LayoutDashboard className="w-5 h-5" />,
         title: "Contract Dashboard",
         description:
             "Track every active contract, milestone status, and payment history from a single, clean dashboard view.",
-        accent: "primary",
+        semanticToken: "primary",
     },
     {
         icon: <Shield className="w-5 h-5" />,
         title: "Secure Payments",
         description:
             "Milestone funds are held safely until deliverables are approved. Neither party can be blindsided.",
-        accent: "green",
+        semanticToken: "success",
     },
 ];
 
-const accentMap = {
+// Replaced raw hardcoded colors with semantic tokens from your status palette
+const semanticMap = {
     primary:
-        "bg-primary/10 text-primary border-primary/20 group-hover:bg-primary/15",
-    green: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 group-hover:bg-emerald-500/15",
-    amber: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 group-hover:bg-amber-500/15",
-    rose: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20 group-hover:bg-rose-500/15",
+        "bg-primary/10 text-primary border-primary/20 group-hover:bg-primary/15 accent-primary",
+    success:
+        "bg-success/10 text-success border-success/20 group-hover:bg-success/15 accent-success",
+    warning:
+        "bg-warning/10 text-warning border-warning/20 group-hover:bg-warning/15 accent-warning",
+    destructive:
+        "bg-destructive/10 text-destructive border-destructive/20 group-hover:bg-destructive/15 accent-destructive",
 };
-
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-    return (
-        <div className="flex items-center gap-3 mb-4">
-            <div className="h-px w-8 bg-primary" />
-            <span className="text-xs font-bold tracking-widest uppercase text-primary">
-                {children}
-            </span>
-        </div>
-    );
-}
-
 
 export function FeaturesSection() {
     return (
         <section className="py-24 bg-background">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                {/* Header */}
                 <div className="max-w-2xl mb-16">
                     <SectionLabel>Platform</SectionLabel>
-                    <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-foreground mb-4">
+                    <h2 className="text-5xl font-bold tracking-tight text-foreground mt-4 mb-4">
                         Built for serious work.
                     </h2>
                     <p className="text-lg text-muted-foreground leading-relaxed">
@@ -93,8 +89,7 @@ export function FeaturesSection() {
                     </p>
                 </div>
 
-                {/* Feature grid */}
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {FEATURES.map((feature, i) => (
                         <FeatureCard key={i} feature={feature} index={i} />
                     ))}
@@ -111,34 +106,26 @@ function FeatureCard({
     feature: FeatureItem;
     index: number;
 }) {
-    const accent = feature.accent ?? "primary";
-    const iconClass = accentMap[accent];
+    const tokenClass = semanticMap[feature.semanticToken];
 
     return (
-        <div className="group relative p-6 rounded-xl border border-border bg-card hover:border-primary/30 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
-            {/* Top accent bar */}
-            <div
-                className={`absolute top-0 left-6 right-6 h-px rounded-full transition-all duration-300 opacity-0 group-hover:opacity-100 ${accent === "primary" ? "bg-primary" : accent === "green" ? "bg-emerald-500" : accent === "amber" ? "bg-amber-500" : "bg-rose-500"}`}
-            />
-
-            {/* Number */}
-            <div className="text-[10px] font-bold tracking-widest text-muted-foreground/50 mb-4">
+        <Card variant="interactive" className="group relative p-8 h-full">
+            <div className="text-[10px] font-bold tracking-widest text-muted-foreground/50 mb-6 uppercase">
                 {String(index + 1).padStart(2, "0")}
             </div>
 
-            {/* Icon */}
             <div
-                className={`inline-flex p-2.5 rounded-lg border mb-4 transition-all duration-300 ${iconClass}`}
+                className={`inline-flex p-3 rounded-xl border mb-6 transition-all duration-base ${tokenClass}`}
             >
                 {feature.icon}
             </div>
 
-            <h3 className="text-base font-bold text-foreground mb-2">
+            <h3 className="text-xl font-bold text-foreground mb-3">
                 {feature.title}
             </h3>
-            <p className="text-sm text-muted-foreground leading-relaxed">
+            <p className="text-base text-muted-foreground leading-relaxed">
                 {feature.description}
             </p>
-        </div>
+        </Card>
     );
 }

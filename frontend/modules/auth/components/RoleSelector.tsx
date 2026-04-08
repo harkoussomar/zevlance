@@ -1,42 +1,12 @@
-import { Button } from "@/components/ui";
-import { cn } from "@/lib/utils";
-import { Role } from "@/types";
-import { ArrowRight, Building2, Check, User } from "lucide-react";
+import { cn } from "@/modules/shared";
+import { Role } from "@/modules/shared/types";
+import { ArrowRight, Check } from "lucide-react";
 import Link from "next/link";
 import { SignupStep } from "../types";
+import { Button } from "@/modules/shared/components/button";
+import { ROLE_OPTIONS } from "../config/role-options";
 
-const ROLE_OPTIONS: Array<{
-    role: Role;
-    label: string;
-    description: string;
-    icon: React.ReactNode;
-    perks: string[];
-}> = [
-    {
-        role: "FREELANCER",
-        label: "Freelancer",
-        description: "Browse projects, submit bids, get paid for great work.",
-        icon: <User className="w-6 h-6" />,
-        perks: [
-            "Browse hundreds of open projects",
-            "Submit structured proposals",
-            "Milestone payment protection",
-            "Build your verified rating",
-        ],
-    },
-    {
-        role: "CLIENT",
-        label: "Client",
-        description: "Post projects, hire talent, manage contracts.",
-        icon: <Building2 className="w-6 h-6" />,
-        perks: [
-            "Post projects for free",
-            "Receive structured bids",
-            "Milestone-based contracts",
-            "Rate your freelancers",
-        ],
-    },
-];
+
 
 export const RoleSelector = ({
     selectedRole,
