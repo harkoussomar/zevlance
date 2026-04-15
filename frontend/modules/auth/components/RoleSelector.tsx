@@ -23,7 +23,7 @@ export const RoleSelector = ({
                 I want to…
             </h2>
             <p className="text-muted-foreground text-sm mb-8">
-                Choose how you&apos;ll use FreelanceHub.
+                Choose how you&apos;ll use Zevlance.
             </p>
 
             <div className="grid gap-4">

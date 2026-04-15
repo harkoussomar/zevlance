@@ -1,39 +1,20 @@
 // ─── proxy.ts ─────────────────────────────────────────────────────────────────
-//
-// Next.js 16: middleware.ts is renamed to proxy.ts, exported function is
-// renamed from `middleware` to `proxy`. Runs on the Node.js runtime (not Edge).
-// Place this file at the project root alongside package.json.
-//
-// Cookie strategy (set by Spring Boot AuthController):
-//   has_session  — non-httpOnly boolean flag; "true" when a JWT exists
-//   user_role    — non-httpOnly "CLIENT" | "FREELANCER"; read here for RBAC
-//   jwt          — httpOnly; never readable here, carried automatically by axios
-//
-// URL note: route groups (auth), (dashboard), (public) are filesystem-only.
-// They do NOT appear in real URLs. The actual paths are:
-//   /login, /register
-//   /client/*, /freelancer/*, /settings
-//   /freelancers/*, /projects
 
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 type Role = "CLIENT" | "FREELANCER";
-
-// ─── Cookie helpers ───────────────────────────────────────────────────────────
 
 function getSession(req: NextRequest): {
     hasSession: boolean;
     role: Role | null;
-    emailVerified: boolean; // ← add
+    emailVerified: boolean;
 } {
     const hasSession = req.cookies.get("has_session")?.value === "true";
     const raw = req.cookies.get("user_role")?.value ?? "";
     const role =
         raw === "CLIENT" || raw === "FREELANCER" ? (raw as Role) : null;
-    const emailVerified = req.cookies.get("email_verified")?.value === "true"; // ← add
+    const emailVerified = req.cookies.get("email_verified")?.value === "true";
     return { hasSession, role, emailVerified };
 }
 
@@ -47,8 +28,6 @@ function roleDashboard(role: Role | null): string {
     return "/login";
 }
 
-// ─── Proxy ────────────────────────────────────────────────────────────────────
-
 export function proxy(req: NextRequest) {
     const { pathname } = req.nextUrl;
     const { hasSession, role, emailVerified } = getSession(req);
@@ -61,7 +40,7 @@ export function proxy(req: NextRequest) {
         return NextResponse.next();
     }
 
-    // ── Auth pages (/login, /register, /forgot-password, /reset-password) ─────
+    // ── Auth pages ────────────────────────────────────────────────────────────
     if (
         ["/login", "/register", "/forgot-password", "/reset-password"].includes(
             pathname,
@@ -71,9 +50,7 @@ export function proxy(req: NextRequest) {
         return NextResponse.next();
     }
 
-    if (pathname === "/verify-email") {
-        return NextResponse.next();
-    }
+    // (Removed the duplicated /verify-email block that was here)
 
     // ── Hard block: logged in but not verified ────────────────────────────────
     if (
@@ -108,11 +85,6 @@ export function proxy(req: NextRequest) {
 
     return NextResponse.next();
 }
-
-// ─── Matcher ──────────────────────────────────────────────────────────────────
-//
-// Exclude Next.js internals and static assets so proxy doesn't run on every
-// image request, font, or build chunk.
 
 export const config = {
     matcher: ["/((?!_next/static|_next/image|favicon.ico|api/).*)"],

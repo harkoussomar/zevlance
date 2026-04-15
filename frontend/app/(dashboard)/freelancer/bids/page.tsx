@@ -1,6 +1,4 @@
-// app/(freelancer)/bids/page.tsx
-
-import { FreelancerBidsPanel } from "@/modules/bid/components/FreelancerBidsPanel";
+import { BidsPanel } from "@/modules/bid/freelancer";
 
 export const metadata = {
     title: "My Proposals",
@@ -8,5 +6,5 @@ export const metadata = {
 };
 
 export default function BidsPage() {
-    return <FreelancerBidsPanel />;
+    return <BidsPanel />;
 }

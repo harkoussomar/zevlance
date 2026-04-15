@@ -13,12 +13,12 @@ import {
 } from "lucide-react";
 import { cn } from "@/modules/shared";
 import { selectRole, useAuthStore } from "@/store/auth-store";
-import { Avatar } from "@/modules/shared/components/avatar";
+import { SmartAvatar } from "@/modules/shared/components/avatar";
 import { useLogout } from "@/modules/auth/hooks/useLogout";
 import { SidebarProps } from "../types";
 import { NAV_ITEMS, ROLE_CONFIG } from "../config/config";
 import { isItemActive } from "../utils";
-import { useMyBasicProfile } from "@/modules/profile/hooks/useProfile";
+import { useMyBasicProfile } from "@/modules/profile/public";
 
 export function Sidebar({ isMobile = false }: SidebarProps) {
     const [collapsed, setCollapsed] = useState(false);
@@ -76,7 +76,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
                 </div>
                 {!isCollapsed && (
                     <span className="font-bold text-sm text-foreground tracking-tight font-display">
-                        Freelance<span className="text-primary">Hub</span>
+                        Zevlance
                     </span>
                 )}
             </div>
@@ -191,7 +191,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
                                         href={roleConfig.profileHref}
                                         title={`${profile.name} — Profile`}
                                     >
-                                        <Avatar name={profile.name} size="sm" />
+                                        <SmartAvatar name={profile.name} size="sm" />
                                     </Link>
                                 )}
                                 <button
@@ -209,7 +209,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
                                         href={roleConfig.profileHref}
                                         className="flex items-center gap-3 px-3 py-2.5 hover:bg-muted/60 transition-colors rounded-lg group"
                                     >
-                                        <Avatar name={profile.name} size="sm" />
+                                        <SmartAvatar name={profile.name} size="sm" />
                                         <div className="flex-1 min-w-0">
                                             <p className="text-xs font-semibold text-foreground truncate leading-tight">
                                                 {profile.name}

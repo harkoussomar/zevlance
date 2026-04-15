@@ -3,6 +3,7 @@ package com.freelancehub.freelancehub.dashboard.dto;
 import java.util.List;
 
 public record FreelancerDashboardResponse(
+        UserSummaryDto user,
         FreelancerDashboardStats stats,
         List<DashboardContractItem> activeContracts,
         List<DashboardBidItem> recentBids,

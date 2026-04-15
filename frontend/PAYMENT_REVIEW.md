@@ -1,12 +1,12 @@
 # Payment System — Deep Expert Review
 
-> FreelanceHub Frontend Payment Architecture, Flow Analysis, and Security Audit
+> Zevlance Frontend Payment Architecture, Flow Analysis, and Security Audit
 
 ---
 
 ## Executive Summary
 
-FreelanceHub implements a **milestone-based escrow payment system** powered by **Stripe Checkout** (client payments) and **Stripe Connect** (freelancer payouts). The system is well-structured with clear separation of concerns, role-based access controls, and a robust state machine governing milestone lifecycle transitions. However, several architectural gaps and edge cases exist that warrant attention before production deployment.
+Zevlance implements a **milestone-based escrow payment system** powered by **Stripe Checkout** (client payments) and **Stripe Connect** (freelancer payouts). The system is well-structured with clear separation of concerns, role-based access controls, and a robust state machine governing milestone lifecycle transitions. However, several architectural gaps and edge cases exist that warrant attention before production deployment.
 
 ---
 

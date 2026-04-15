@@ -10,24 +10,29 @@ const TabsContext = React.createContext<TabsContextType>({
     activeTab: "",
     setActiveTab: () => {},
 });
-
 interface TabsProps {
-    defaultValue: string;
+    defaultValue?: string;
+    value?: string;           // ← add controlled mode
     className?: string;
     children: React.ReactNode;
     onChange?: (value: string) => void;
 }
 
 export function Tabs({
-    defaultValue,
+    defaultValue = "",
+    value,
     className,
     children,
     onChange,
 }: TabsProps) {
-    const [activeTab, setActiveTab] = React.useState(defaultValue);
+    const [internalTab, setInternalTab] = React.useState(defaultValue);
+
+    const activeTab = value ?? internalTab;  // controlled takes priority
 
     const handleChange = (tab: string) => {
-        setActiveTab(tab);
+        if (value === undefined) {
+            setInternalTab(tab);  // only update internal state if uncontrolled
+        }
         onChange?.(tab);
     };
 
@@ -37,7 +42,6 @@ export function Tabs({
         </TabsContext.Provider>
     );
 }
-
 export function TabsList({
     className,
     children,

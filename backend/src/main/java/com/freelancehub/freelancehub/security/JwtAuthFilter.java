@@ -1,5 +1,6 @@
 package com.freelancehub.freelancehub.security;
 
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -34,6 +35,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         String jwt = null;
 
+        // 1. Check Cookies first
         if (request.getCookies() != null) {
             for (Cookie cookie : request.getCookies()) {
                 if ("jwt".equals(cookie.getName())) {
@@ -46,6 +48,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         log.debug("URI: {}", request.getRequestURI());
         log.debug("JWT from cookie found: {}", jwt != null);
 
+        // 2. Fallback to Authorization Header (useful for Postman testing)
         if (jwt == null) {
             String authHeader = request.getHeader("Authorization");
             if (authHeader != null && authHeader.startsWith("Bearer ")) {
@@ -64,13 +67,22 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         try {
             email = jwtService.extractEmail(jwt);
             log.debug("Extracted email: {}", email);
+        } catch (JwtException e) {
+            // Catches ExpiredJwtException, SignatureException, MalformedJwtException, etc.
+            log.error("JWT Token invalid or expired: {}", e.getMessage());
+            filterChain.doFilter(request, response);
+            return;
         } catch (Exception e) {
-            log.debug("Token extraction failed: {}", e.getMessage());
+            log.error("Unexpected error during token extraction", e);
             filterChain.doFilter(request, response);
             return;
         }
 
         if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+
+            // Note: This queries the database on every API call.
+            // This is acceptable, but if you want maximum performance later,
+            // you can build UserDetails directly from the JWT claims.
             UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
             if (jwtService.isTokenValid(jwt, userDetails)) {

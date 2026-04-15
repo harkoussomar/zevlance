@@ -14,7 +14,7 @@ import { useRegister } from "../hooks/useRegister";
 import type { Role } from "@/modules/shared/types";
 import { Alert } from "@/modules/shared/components/alert";
 import { FormField } from "@/modules/shared/components/form-field";
-import { Input } from "@/modules/shared/components/input";
+import { InputField } from "@/modules/shared/components/input";
 import { Button } from "@/modules/shared/components/button";
 import { Textarea } from "@/modules/shared/components/textarea";
 
@@ -24,13 +24,7 @@ interface RegisterFormProps {
 
 // ─── Shared password toggle button ───────────────────────────────────────────
 
-function PasswordToggle({
-    show,
-    onToggle,
-}: {
-    show: boolean;
-    onToggle: () => void;
-}) {
+function PasswordToggle({ show, onToggle }: { show: boolean; onToggle: () => void }) {
     return (
         <button
             type="button"
@@ -39,11 +33,7 @@ function PasswordToggle({
             aria-label={show ? "Hide password" : "Show password"}
             className="text-muted-foreground hover:text-foreground transition-colors"
         >
-            {show ? (
-                <EyeOff className="w-4 h-4" />
-            ) : (
-                <Eye className="w-4 h-4" />
-            )}
+            {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
         </button>
     );
 }
@@ -64,14 +54,9 @@ function TermsFooter() {
     return (
         <p className="text-xs text-muted-foreground text-center">
             By creating an account you agree to our{" "}
-            <a href="#" className="text-primary hover:underline">
-                Terms
-            </a>{" "}
+            <a href="#" className="text-primary hover:underline">Terms</a>{" "}
             and{" "}
-            <a href="#" className="text-primary hover:underline">
-                Privacy Policy
-            </a>
-            .
+            <a href="#" className="text-primary hover:underline">Privacy Policy</a>.
         </p>
     );
 }
@@ -79,34 +64,22 @@ function TermsFooter() {
 // ─── Freelancer form ──────────────────────────────────────────────────────────
 
 function FreelancerForm() {
-    const {
-        register: registerUser,
-        isLoading,
-        serverError,
-    } = useRegister("FREELANCER");
+    const { register: registerUser, isLoading, serverError } = useRegister("FREELANCER");
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
 
-    const {
-        register,
-        handleSubmit,
-        formState: { errors },
-    } = useForm<RegisterFreelancerSchemaType>({
+    const { register, handleSubmit, formState: { errors } } = useForm<RegisterFreelancerSchemaType>({
         mode: "onBlur",
         resolver: standardSchemaResolver(registerFreelancerSchema),
     });
 
     return (
-        <form
-            onSubmit={handleSubmit(registerUser)}
-            className="space-y-4"
-            noValidate
-        >
+        <form onSubmit={handleSubmit(registerUser)} className="space-y-4" noValidate>
             {serverError && <Alert variant="destructive">{serverError}</Alert>}
 
             <div className="grid sm:grid-cols-2 gap-4">
                 <FormField label="Full Name" required>
-                    <Input
+                    <InputField
                         placeholder="Sara Dev"
                         autoComplete="name"
                         error={errors.name?.message}
@@ -114,7 +87,7 @@ function FreelancerForm() {
                     />
                 </FormField>
                 <FormField label="Phone">
-                    <Input
+                    <InputField
                         type="tel"
                         placeholder="+212 600-000-000"
                         autoComplete="tel"
@@ -125,7 +98,7 @@ function FreelancerForm() {
             </div>
 
             <FormField label="Email address" required>
-                <Input
+                <InputField
                     type="email"
                     placeholder="you@example.com"
                     autoComplete="email"
@@ -136,7 +109,7 @@ function FreelancerForm() {
 
             <div className="grid sm:grid-cols-2 gap-4">
                 <FormField label="Password" required>
-                    <Input
+                    <InputField
                         type={showPassword ? "text" : "password"}
                         placeholder="••••••••"
                         autoComplete="new-password"
@@ -151,7 +124,7 @@ function FreelancerForm() {
                     />
                 </FormField>
                 <FormField label="Confirm Password" required>
-                    <Input
+                    <InputField
                         type={showConfirm ? "text" : "password"}
                         placeholder="••••••••"
                         autoComplete="new-password"
@@ -169,12 +142,7 @@ function FreelancerForm() {
 
             <PasswordHint />
 
-            <Button
-                type="submit"
-                size="lg"
-                loading={isLoading}
-                className="w-full"
-            >
+            <Button type="submit" size="lg" loading={isLoading} className="w-full">
                 Create Account
                 <ArrowRight className="w-4 h-4" />
             </Button>
@@ -187,33 +155,21 @@ function FreelancerForm() {
 // ─── Client form ──────────────────────────────────────────────────────────────
 
 function ClientForm() {
-    const {
-        register: registerUser,
-        isLoading,
-        serverError,
-    } = useRegister("CLIENT");
+    const { register: registerUser, isLoading, serverError } = useRegister("CLIENT");
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
 
-    const {
-        register,
-        handleSubmit,
-        formState: { errors },
-    } = useForm<RegisterClientSchemaType>({
+    const { register, handleSubmit, formState: { errors } } = useForm<RegisterClientSchemaType>({
         resolver: standardSchemaResolver(registerClientSchema),
     });
 
     return (
-        <form
-            onSubmit={handleSubmit(registerUser)}
-            className="space-y-4"
-            noValidate
-        >
+        <form onSubmit={handleSubmit(registerUser)} className="space-y-4" noValidate>
             {serverError && <Alert variant="destructive">{serverError}</Alert>}
 
             <div className="grid sm:grid-cols-2 gap-4">
                 <FormField label="Full Name" required>
-                    <Input
+                    <InputField
                         placeholder="Omar K."
                         autoComplete="name"
                         error={errors.name?.message}
@@ -221,7 +177,7 @@ function ClientForm() {
                     />
                 </FormField>
                 <FormField label="Phone">
-                    <Input
+                    <InputField
                         type="tel"
                         placeholder="+212 600-000-000"
                         autoComplete="tel"
@@ -232,7 +188,7 @@ function ClientForm() {
             </div>
 
             <FormField label="Email address" required>
-                <Input
+                <InputField
                     type="email"
                     placeholder="you@company.com"
                     autoComplete="email"
@@ -243,7 +199,7 @@ function ClientForm() {
 
             <div className="grid sm:grid-cols-2 gap-4">
                 <FormField label="Password" required>
-                    <Input
+                    <InputField
                         type={showPassword ? "text" : "password"}
                         placeholder="••••••••"
                         autoComplete="new-password"
@@ -258,7 +214,7 @@ function ClientForm() {
                     />
                 </FormField>
                 <FormField label="Confirm Password" required>
-                    <Input
+                    <InputField
                         type={showConfirm ? "text" : "password"}
                         placeholder="••••••••"
                         autoComplete="new-password"
@@ -284,7 +240,7 @@ function ClientForm() {
 
                 <div className="grid sm:grid-cols-2 gap-4">
                     <FormField label="Company Name">
-                        <Input
+                        <InputField
                             placeholder="OmarTech"
                             autoComplete="organization"
                             error={errors.companyName?.message}
@@ -292,7 +248,7 @@ function ClientForm() {
                         />
                     </FormField>
                     <FormField label="Website">
-                        <Input
+                        <InputField
                             type="url"
                             placeholder="https://omartech.com"
                             autoComplete="url"
@@ -312,12 +268,7 @@ function ClientForm() {
                 </FormField>
             </div>
 
-            <Button
-                type="submit"
-                size="lg"
-                loading={isLoading}
-                className="w-full"
-            >
+            <Button type="submit" size="lg" loading={isLoading} className="w-full">
                 Create Account
                 <ArrowRight className="w-4 h-4" />
             </Button>

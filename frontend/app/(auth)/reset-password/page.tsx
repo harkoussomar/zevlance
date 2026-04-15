@@ -10,7 +10,7 @@ import { authService } from "@/modules/auth/services/auth.service";
 import { parseApiError } from "@/modules/shared";
 import { Alert } from "@/modules/shared/components/alert";
 import { FormField } from "@/modules/shared/components/form-field";
-import { Input } from "@/modules/shared/components/input";
+import {  InputField } from "@/modules/shared/components/input";
 import { Button } from "@/modules/shared/components/button";
 import { LeftDecorativePanel } from "@/modules/auth";
 
@@ -116,9 +116,7 @@ export default function ResetPasswordPage() {
                         <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
                             <Briefcase className="w-4 h-4 text-primary-foreground" />
                         </div>
-                        <span className="font-bold text-foreground">
-                            Freelance<span className="text-primary">Hub</span>
-                        </span>
+                        <span className="font-bold text-foreground">Zevlance</span>
                     </div>
 
                     {success ? (
@@ -170,7 +168,7 @@ export default function ResetPasswordPage() {
                                 )}
 
                                 <FormField label="New password" required>
-                                    <Input
+                                    <InputField
                                         type={
                                             showPassword ? "text" : "password"
                                         }
@@ -206,7 +204,7 @@ export default function ResetPasswordPage() {
                                     label="Confirm new password"
                                     required
                                 >
-                                    <Input
+                                    <InputField
                                         type={showConfirm ? "text" : "password"}
                                         placeholder="••••••••"
                                         autoComplete="new-password"

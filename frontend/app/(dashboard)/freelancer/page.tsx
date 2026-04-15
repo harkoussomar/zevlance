@@ -1,5 +1,5 @@
-import { FreelancerDashboard } from "@/modules/dashboard";
+import { FreelancerOverview } from "@/modules/overview/freelancer";
 
-export default function Page() {
-    return <FreelancerDashboard />;
+export default function FreelancerOverviewPage() {
+    return <FreelancerOverview />;
 }

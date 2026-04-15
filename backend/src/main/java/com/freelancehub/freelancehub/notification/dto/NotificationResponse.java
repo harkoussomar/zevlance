@@ -1,6 +1,8 @@
 package com.freelancehub.freelancehub.notification.dto;
 
 import com.freelancehub.freelancehub.notification.domain.NotificationType;
+import com.freelancehub.freelancehub.notification.domain.ReferenceType;
+
 import java.time.LocalDateTime;
 
 public record NotificationResponse(
@@ -10,6 +12,6 @@ public record NotificationResponse(
         String message,
         boolean read,
         String referenceId,
-        String referenceType,
+        ReferenceType referenceType,
         LocalDateTime createdAt
 ) {}

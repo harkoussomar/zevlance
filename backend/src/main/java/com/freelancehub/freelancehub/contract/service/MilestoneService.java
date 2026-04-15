@@ -11,6 +11,7 @@ import com.freelancehub.freelancehub.contract.repository.MilestoneRepository;
 import com.freelancehub.freelancehub.exception.NotFoundException;
 import com.freelancehub.freelancehub.exception.UnauthorizedException;
 import com.freelancehub.freelancehub.notification.domain.NotificationType;
+import com.freelancehub.freelancehub.notification.domain.ReferenceType;
 import com.freelancehub.freelancehub.notification.service.EmailTemplates;
 import com.freelancehub.freelancehub.notification.service.NotificationService;
 import com.freelancehub.freelancehub.payment.service.PaymentService;
@@ -19,6 +20,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -37,15 +40,9 @@ public class MilestoneService {
     @Value("${app.frontend-url}")
     private String frontendUrl;
 
-    // ── Client: create milestone ──────────────────────────────────────────────
-
     @PreAuthorize("hasRole('CLIENT')")
     @Transactional
-    public MilestoneResponse createMilestone(
-            String contractId,
-            CreateMilestoneRequest request,
-            String clientId
-    ) {
+    public MilestoneResponse createMilestone(String contractId, CreateMilestoneRequest request, String clientId) {
         Contract contract = contractService.findContractById(contractId);
         assertClient(contract, clientId);
 
@@ -53,7 +50,6 @@ public class MilestoneService {
             throw new IllegalStateException("Milestones can only be added to ACTIVE contracts");
         }
 
-        // ── Total cap: sum of existing milestones + new amount ≤ agreedPrice ──
         BigDecimal currentTotal = milestoneRepository.findByContractId(contractId)
                 .stream()
                 .map(Milestone::getAmount)
@@ -78,8 +74,6 @@ public class MilestoneService {
         return toResponse(milestone);
     }
 
-    // ── Both parties: list milestones ─────────────────────────────────────────
-
     @Transactional(readOnly = true)
     public List<MilestoneResponse> getMilestones(String contractId, String userId) {
         Contract contract = contractService.findContractById(contractId);
@@ -91,25 +85,15 @@ public class MilestoneService {
                 .toList();
     }
 
-    // ── Freelancer: submit deliverable ────────────────────────────────────────
-    //
-    //  Milestone must be FUNDED before a deliverable can be submitted.
-    //  This guarantees the freelancer is protected — money is in escrow
-    //  before they do any work.
-
     @PreAuthorize("hasRole('FREELANCER')")
     @Transactional
-    public MilestoneResponse submitDeliverable(
-            String milestoneId,
-            SubmitDeliverableRequest request,
-            String freelancerId
-    ) {
+    public MilestoneResponse submitDeliverable(String milestoneId, SubmitDeliverableRequest request, String freelancerId) {
         Milestone milestone = findMilestoneById(milestoneId);
         assertFreelancer(milestone, freelancerId);
 
         String clientId    = milestone.getContract().getBid().getProject().getClient().getId();
+        String clientEmail = milestone.getContract().getBid().getProject().getClient().getEmail();
         String contractId  = milestone.getContract().getId();
-        String projectTitle = milestone.getContract().getBid().getProject().getTitle();
 
         if (milestone.getStatus() != MilestoneStatus.FUNDED
                 && milestone.getStatus() != MilestoneStatus.REVISION_REQUESTED) {
@@ -121,14 +105,15 @@ public class MilestoneService {
 
         milestone.setDeliverableUrl(request.deliverableUrl());
         milestone.setStatus(MilestoneStatus.SUBMITTED);
-        milestoneRepository.save(milestone);
 
         notificationService.notifyWithEmail(
-                clientId, NotificationType.MILESTONE_SUBMITTED,
+                clientId, clientEmail,
+                NotificationType.MILESTONE_SUBMITTED,
                 "Deliverable submitted for review",
                 milestone.getContract().getBid().getFreelancer().getName()
                         + " submitted \"" + milestone.getTitle() + "\"",
-                milestone.getId(), "MILESTONE",
+                milestone.getId(),
+                ReferenceType.MILESTONE,
                 "Deliverable ready for review",
                 EmailTemplates.milestoneSubmitted(
                         milestone.getContract().getBid().getProject().getClient().getName(),
@@ -140,11 +125,6 @@ public class MilestoneService {
 
         return toResponse(milestone);
     }
-
-    // ── Client: approve milestone & release escrow ────────────────────────────
-    //
-    //  Transitions: SUBMITTED → APPROVED
-    //  Triggers a Stripe Transfer to the freelancer's connected account.
 
     @PreAuthorize("hasRole('CLIENT')")
     @Transactional
@@ -158,20 +138,26 @@ public class MilestoneService {
 
         milestone.setStatus(MilestoneStatus.APPROVED);
 
-        // Release escrow → transfer to freelancer via Stripe
-        paymentService.releasePayment(milestone);
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                paymentService.releasePayment(milestone);
+            }
+        });
 
-        // Auto-complete contract if all milestones are approved
         autoCompleteContractIfDone(milestone.getContract(), clientId);
 
         String freelancerId = milestone.getContract().getBid().getFreelancer().getId();
+        String freeEmail = milestone.getContract().getBid().getFreelancer().getEmail();
 
         notificationService.notifyWithEmail(
-                freelancerId, NotificationType.MILESTONE_APPROVED,
+                freelancerId, freeEmail,
+                NotificationType.MILESTONE_APPROVED,
                 "Milestone approved — payment released 💰",
                 "\"" + milestone.getTitle() + "\" approved. $"
                         + milestone.getFreelancerPayout() + " transferred to your account.",
-                milestone.getId(), "MILESTONE",
+                milestone.getId(),
+                ReferenceType.MILESTONE,
                 "Milestone approved — payment released",
                 EmailTemplates.milestoneApproved(
                         milestone.getContract().getBid().getFreelancer().getName(),
@@ -184,11 +170,6 @@ public class MilestoneService {
         return toResponse(milestone);
     }
 
-    // ── Client: request revision ──────────────────────────────────────────────
-    //
-    //  Max MAX_REVISIONS revisions enforced. On the final refusal, the
-    //  milestone is escalated to DISPUTED and funds are frozen.
-
     @PreAuthorize("hasRole('CLIENT')")
     @Transactional
     public MilestoneResponse requestRevision(String milestoneId, String clientId) {
@@ -200,8 +181,6 @@ public class MilestoneService {
         }
 
         int newCount = milestone.getRevisionCount() + 1;
-
-        // ✅ FIX: define freelancerId
         String freelancerId = milestone.getContract().getBid().getFreelancer().getId();
 
         if (newCount >= MAX_REVISIONS) {
@@ -214,7 +193,7 @@ public class MilestoneService {
                     "Milestone escalated to dispute",
                     "Max revisions reached on \"" + milestone.getTitle() + "\". Funds are frozen pending review.",
                     milestone.getId(),
-                    "MILESTONE"
+                    ReferenceType.MILESTONE
             );
 
             return toResponse(milestone);
@@ -229,20 +208,18 @@ public class MilestoneService {
                 "Revision requested",
                 "The client requested a revision on \"" + milestone.getTitle() + "\".",
                 milestone.getId(),
-                "MILESTONE"
+                ReferenceType.MILESTONE
         );
 
         return toResponse(milestone);
     }
-    // ── Auto-complete contract ────────────────────────────────────────────────
 
     private void autoCompleteContractIfDone(Contract contract, String clientId) {
         boolean anyNotApproved = milestoneRepository
                 .existsByContractIdAndStatusNot(contract.getId(), MilestoneStatus.APPROVED);
 
-        if (anyNotApproved) return; // some milestones still pending
+        if (anyNotApproved) return;
 
-        // Only auto-complete if approved amounts cover the full agreed price
         BigDecimal approvedTotal = milestoneRepository.findByContractId(contract.getId())
                 .stream()
                 .map(Milestone::getAmount)
@@ -251,10 +228,7 @@ public class MilestoneService {
         if (approvedTotal.compareTo(contract.getAgreedPrice()) >= 0) {
             contractService.completeContractInternal(contract.getId(), clientId);
         }
-        // Otherwise stay ACTIVE — client can still add more milestones
     }
-
-    // ── Helpers ───────────────────────────────────────────────────────────────
 
     public Milestone findMilestoneById(String id) {
         return milestoneRepository.findById(id)
@@ -284,8 +258,6 @@ public class MilestoneService {
             throw new UnauthorizedException("You are not a party to this contract");
         }
     }
-
-    // ── Mapping ───────────────────────────────────────────────────────────────
 
     public MilestoneResponse toResponse(Milestone m) {
         return new MilestoneResponse(

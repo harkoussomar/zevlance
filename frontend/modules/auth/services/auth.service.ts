@@ -1,61 +1,65 @@
 import api from "@/modules/shared/lib/axios";
 import type {
-  AuthResponse,
-  LoginRequest,
-  RegisterClientRequest,
-  RegisterFreelancerRequest,
+    AuthResponse,
+    LoginRequest,
+    RegisterClientRequest,
+    RegisterFreelancerRequest,
 } from "../types";
 
 export const authService = {
-  login: (data: LoginRequest, signal?: AbortSignal): Promise<AuthResponse> =>
-    api
-      .post<AuthResponse>("/auth/login", data, { signal })
-      .then((res) => res.data),
+    async login(
+        data: LoginRequest,
+        signal?: AbortSignal,
+    ): Promise<AuthResponse> {
+        const { data: response } = await api.post<AuthResponse>(
+            "/auth/login",
+            data,
+            { signal },
+        );
+        return response;
+    },
 
-  registerFreelancer: (
-    data: RegisterFreelancerRequest,
-    signal?: AbortSignal,
-  ): Promise<AuthResponse> =>
-    api
-      .post<AuthResponse>("/auth/register/freelancer", data, { signal })
-      .then((res) => res.data),
+    async registerFreelancer(
+        data: RegisterFreelancerRequest,
+        signal?: AbortSignal,
+    ): Promise<AuthResponse> {
+        const { data: response } = await api.post<AuthResponse>(
+            "/auth/register/freelancer",
+            data,
+            { signal },
+        );
+        return response;
+    },
 
-  registerClient: (
-    data: RegisterClientRequest,
-    signal?: AbortSignal,
-  ): Promise<AuthResponse> =>
-    api
-      .post<AuthResponse>("/auth/register/client", data, { signal })
-      .then((res) => res.data),
+    async registerClient(
+        data: RegisterClientRequest,
+        signal?: AbortSignal,
+    ): Promise<AuthResponse> {
+        const { data: response } = await api.post<AuthResponse>(
+            "/auth/register/client",
+            data,
+            { signal },
+        );
+        return response;
+    },
 
-  logout: (signal?: AbortSignal): Promise<void> =>
-    api
-      .post<void>("/auth/logout", undefined, { signal })
-      .then(() => undefined),
+    async logout(signal?: AbortSignal): Promise<void> {
+        await api.post<void>("/auth/logout", undefined, { signal });
+    },
 
-  /**
-   * forgotPassword
-   *
-   * Sends a password-reset link to the provided email.
-   * The backend never reveals whether the email exists — always returns 200.
-   */
-  forgotPassword: (email: string, signal?: AbortSignal): Promise<void> =>
-    api
-      .post<void>("/auth/forgot-password", { email }, { signal })
-      .then(() => undefined),
+    async forgotPassword(email: string, signal?: AbortSignal): Promise<void> {
+        await api.post<void>("/auth/forgot-password", { email }, { signal });
+    },
 
-  /**
-   * resetPassword
-   *
-   * Submits the new password along with the one-time token from the email link.
-   * Throws AxiosError on expired / invalid token (4xx).
-   */
-  resetPassword: (
-    token: string,
-    newPassword: string,
-    signal?: AbortSignal,
-  ): Promise<void> =>
-    api
-      .post<void>("/auth/reset-password", { token, newPassword }, { signal })
-      .then(() => undefined),
+    async resetPassword(
+        token: string,
+        newPassword: string,
+        signal?: AbortSignal,
+    ): Promise<void> {
+        await api.post<void>(
+            "/auth/reset-password",
+            { token, newPassword },
+            { signal },
+        );
+    },
 } as const;

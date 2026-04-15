@@ -6,12 +6,12 @@ import com.freelancehub.freelancehub.contract.repository.MilestoneRepository;
 import com.freelancehub.freelancehub.exception.NotFoundException;
 import com.freelancehub.freelancehub.exception.UnauthorizedException;
 import com.freelancehub.freelancehub.notification.domain.NotificationType;
+import com.freelancehub.freelancehub.notification.domain.ReferenceType;
 import com.freelancehub.freelancehub.notification.service.EmailTemplates;
 import com.freelancehub.freelancehub.notification.service.NotificationService;
 import com.freelancehub.freelancehub.payment.domain.StripeEventLog;
 import com.freelancehub.freelancehub.payment.dto.CheckoutSessionResponse;
 import com.freelancehub.freelancehub.payment.repository.StripeEventLogRepository;
-import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
 import com.stripe.model.PaymentIntent;
 import com.stripe.model.Refund;
@@ -32,8 +32,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
-
-import static com.stripe.Stripe.clientId;
 
 @Slf4j
 @Service
@@ -155,7 +153,6 @@ public class PaymentService {
                 ));
 
         if (milestone.getStatus() != MilestoneStatus.PENDING) {
-            // Idempotent — already processed
             log.warn("Milestone {} already past PENDING when checkout.completed fired", milestone.getId());
             return;
         }
@@ -163,29 +160,33 @@ public class PaymentService {
         milestone.setStatus(MilestoneStatus.FUNDED);
         milestone.setStripePaymentIntentId(paymentIntentId);
         milestone.setFundedAt(LocalDateTime.now());
+        milestoneRepository.save(milestone);
 
-        String freelancerId = milestone.getContract().getBid().getFreelancer().getId();
-        String contractId   = milestone.getContract().getId();
-        String projectTitle = milestone.getContract().getBid().getProject().getTitle();
+        String freelancerId    = milestone.getContract().getBid().getFreelancer().getId();
+        String freelancerEmail = milestone.getContract().getBid().getFreelancer().getEmail();
+        String freelancerName  = milestone.getContract().getBid().getFreelancer().getName();
+        String contractId      = milestone.getContract().getId();
+        String projectTitle    = milestone.getContract().getBid().getProject().getTitle();
 
         notificationService.notifyWithEmail(
-                freelancerId, NotificationType.MILESTONE_FUNDED,
-                "Milestone funded — start working! ✅",
-                "\"" + milestone.getTitle() + "\" on \"" + projectTitle + "\" is now funded.",
-                milestone.getId(), "MILESTONE",
+                freelancerId,
+                freelancerEmail,
+                NotificationType.MILESTONE_FUNDED,
+                "Milestone funded — you can start working",
+                "\"" + milestone.getTitle() + "\" on project \"" + projectTitle + "\" has been funded.",
+                milestone.getId(),
+                ReferenceType.MILESTONE,
                 "Milestone funded",
                 EmailTemplates.milestoneFunded(
-                        milestone.getContract().getBid().getFreelancer().getName(),
-                        milestone.getTitle(), projectTitle,
+                        freelancerName,
+                        milestone.getTitle(),
+                        projectTitle,
                         frontendUrl + "/freelancer/contracts/" + contractId
                 )
         );
 
-        milestoneRepository.save(milestone);
-
         log.info("Milestone {} FUNDED via session {}", milestone.getId(), sessionId);
     }
-
     // ── Release payment: APPROVED → transfer to freelancer ───────────────────
     //
     //  Called by MilestoneService.approveMilestone after status is set APPROVED.
@@ -254,7 +255,7 @@ public class PaymentService {
                     clientId, NotificationType.PAYMENT_REFUNDED,
                     "Refund processed",
                     "Payment for \"" + milestone.getTitle() + "\" has been refunded.",
-                    milestone.getId(), "MILESTONE",
+                    milestone.getId(), ReferenceType.MILESTONE,  // ✅ enum instead of string
                     "Refund processed",
                     EmailTemplates.paymentRefunded(
                             milestone.getContract().getBid().getProject().getClient().getName(),

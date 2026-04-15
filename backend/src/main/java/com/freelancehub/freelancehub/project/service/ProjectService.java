@@ -7,7 +7,6 @@ import com.freelancehub.freelancehub.project.domain.ProjectStatus;
 import com.freelancehub.freelancehub.project.dto.*;
 import com.freelancehub.freelancehub.project.repository.ProjectRepository;
 import com.freelancehub.freelancehub.user.domain.Client;
-import com.freelancehub.freelancehub.user.repository.ClientRepository;
 import com.freelancehub.freelancehub.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -16,31 +15,25 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.UUID;
-
 @Service
 @RequiredArgsConstructor
 public class ProjectService {
 
     private final ProjectRepository projectRepository;
-
     private final UserService userService;
-
-    // ── Public: list with filters ─────────────────────────────────
 
     @Transactional(readOnly = true)
     public Page<ProjectSummaryResponse> getProjects(ProjectFilter filter, Pageable pageable) {
         return projectRepository.findWithFilters(
-                filter.category(),
-                filter.status(),
+                filter.category() != null ? filter.category().name() : null,
+                filter.status() != null ? filter.status().name() : null,
                 filter.budgetMin(),
                 filter.budgetMax(),
                 filter.skill(),
+                filter.query(),
                 pageable
         ).map(this::toSummary);
     }
-
-    // ── Public: single project ─────────────────────────────────────
 
     @Transactional(readOnly = true)
     public ProjectResponse getProject(String projectId) {
@@ -48,27 +41,21 @@ public class ProjectService {
         return toResponse(project);
     }
 
-    // ── Client: my projects ───────────────────────────────────────
-
-    @PreAuthorize("hasRole('CLIENT')")
     @Transactional(readOnly = true)
     public Page<ProjectSummaryResponse> getMyProjects(String clientId, Pageable pageable) {
         return projectRepository.findByClientId(clientId, pageable)
                 .map(this::toSummary);
     }
 
-    // ── Client: create ────────────────────────────────────────────
-
-    @PreAuthorize("hasRole('CLIENT')")
     @Transactional
-    public ProjectResponse createProject(CreateProjectRequest request, String clientId) {if (request.budgetMin().compareTo(request.budgetMax()) > 0) {
-        throw new IllegalArgumentException("Budget min cannot be greater than budget max");
-    }
+    public ProjectResponse createProject(CreateProjectRequest request, String clientId) {
+        if (request.budgetMin().compareTo(request.budgetMax()) > 0) {
+            throw new IllegalArgumentException("Budget min cannot be greater than budget max");
+        }
 
         Client client = userService.findClientById(clientId);
 
         Project project = new Project();
-
         project.setTitle(request.title());
         project.setDescription(request.description());
         project.setBudgetMin(request.budgetMin());
@@ -82,9 +69,6 @@ public class ProjectService {
         return toResponse(project);
     }
 
-    // ── Client: update (owner only) ───────────────────────────────
-
-    @PreAuthorize("hasRole('CLIENT')")
     @Transactional
     public ProjectResponse updateProject(String projectId, UpdateProjectRequest request, String clientId) {
 
@@ -103,9 +87,6 @@ public class ProjectService {
         return toResponse(project);
     }
 
-    // ── Client: cancel (owner only) ───────────────────────────────
-
-    @PreAuthorize("hasRole('CLIENT')")
     @Transactional
     public void cancelProject(String projectId, String clientId) {
         Project project = findProjectById(projectId);
@@ -120,8 +101,6 @@ public class ProjectService {
 
         project.setStatus(ProjectStatus.CANCELLED);
     }
-
-    // ── Internal helpers ──────────────────────────────────────────
 
     public Project findProjectById(String id) {
         return projectRepository.findById(id)
@@ -139,8 +118,6 @@ public class ProjectService {
             throw new IllegalStateException("Only OPEN projects can be edited");
         }
     }
-
-    // ── Mapping ───────────────────────────────────────────────────
 
     private ProjectSummaryResponse toSummary(Project p) {
         return new ProjectSummaryResponse(

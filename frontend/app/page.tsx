@@ -9,19 +9,19 @@ import { StatsSection } from "@/modules/landing-page/components/StatsSection";
 import { TestimonialsSection } from "@/modules/landing-page/components/TestimonialsSection";
 
 export default function LandingPage() {
-    return (
-        <div className="min-h-screen">
-            <Navbar />
-            <main>
-                <HeroSection />
-                <StatsSection />
-                <FeaturesSection />
-                <HowItWorksSection />
-                <RoleCardsSection />
-                <TestimonialsSection />
-                <CTASection />
-            </main>
-            <Footer />
-        </div>
-    );
+  return (
+    <div className="min-h-screen bg-background text-foreground flex flex-col selection:bg-primary/30 selection:text-primary">
+      <Navbar />
+      <main className="flex-1">
+        <HeroSection />
+        <HowItWorksSection />
+        <FeaturesSection />
+        <StatsSection />
+        <RoleCardsSection />
+        <TestimonialsSection />
+        <CTASection />
+      </main>
+      <Footer />
+    </div>
+  );
 }

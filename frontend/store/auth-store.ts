@@ -34,12 +34,14 @@ export const useAuthStore = create<AuthState & AuthActions>()((set) => ({
     }),
 
   logout: () => {
-    // Clear the JS-readable session flag cookie. The httpOnly JWT is cleared
-    // server-side by POST /auth/logout (called by the axios interceptor or
-    // the logout handler before this action is dispatched).
     if (typeof document !== "undefined") {
+      // Clear all UI state cookies
       document.cookie = "has_session=; path=/; max-age=0";
       document.cookie = "user_role=; path=/; max-age=0";
+      
+      // FIX: Also clear the email verified and CSRF cookies!
+      document.cookie = "email_verified=; path=/; max-age=0";
+      document.cookie = "XSRF-TOKEN=; path=/; max-age=0";
     }
     set(INITIAL_STATE);
   },

@@ -1,64 +1,65 @@
-/**
- * parseApiError
- *
- * Single reusable error extractor for all auth flows (and beyond).
- *
- * The only thing that differs between login and register is which HTTP status
- * codes carry domain-specific meaning. Pass a `statusMessages` map to
- * override those per call-site — everything else (response shape, field
- * errors, fallback) is shared.
- *
- * Usage:
- *   // Login
- *   parseApiError(err, {
- *     401: "Invalid email or password",
- *     403: "Access denied",
- *   });
- *
- *   // Register
- *   parseApiError(err, {
- *     409: "An account with this email already exists",
- *     400: "Please check your details and try again",
- *   });
- *
- *   // Generic (no overrides needed)
- *   parseApiError(err);
- */
+import axios from "axios";
+
 export function parseApiError(
-  error: unknown,
-  statusMessages: Record<number, string> = {},
+    error: unknown,
+    statusMessages: Record<number, string> = {},
 ): string {
-  if (
-    error &&
-    typeof error === "object" &&
-    "response" in error &&
-    error.response &&
-    typeof error.response === "object" &&
-    "data" in error.response
-  ) {
-    const response = error.response as {
-      data: Record<string, string>;
-      status?: number;
-    };
-    const data = response.data;
+    if (axios.isAxiosError(error)) {
+        
+        // Ignore cancelled requests
+        if (axios.isCancel(error)) return "";
 
-    // 1. Single message field from Spring (most common)
-    if (data?.message) return data.message;
+        const response = error.response;
 
-    // 2. Spring Validation field errors — { fieldName: "message", ... }
-    const fieldErrors = Object.entries(data ?? {})
-      .filter(([key]) => key !== "error")
-      .map(([field, msg]) => `${field}: ${msg}`)
-      .join(", ");
-    if (fieldErrors) return fieldErrors;
+        if (response) {
+            const { status, data } = response;
 
-    // 3. Status-code messages — caller-supplied overrides first, then shared defaults
-    const status = response.status;
-    if (status !== undefined) {
-      if (statusMessages[status]) return statusMessages[status];
-      if (status === 500) return "Server error — please try again later";
+            // A. Component-level overrides (Highest Priority)
+            if (statusMessages[status]) {
+                return statusMessages[status];
+            }
+
+            if (data && typeof data === "object" && !Array.isArray(data)) {
+                
+                // B. Matches your backend: public record ErrorResponse(String message)
+                if ("message" in data && typeof data.message === "string") {
+                    return data.message;
+                }
+
+                // C. Matches your backend: MethodArgumentNotValidException Map<String, String>
+                const fieldErrors = Object.entries(data)
+                    .filter(([key, val]) => key !== "error" && typeof val === "string")
+                    .map(([field, msg]) => `${capitalize(field)}: ${msg}`)
+                    .join(", ");
+                
+                if (fieldErrors) return fieldErrors;
+            }
+
+            // D. Fallbacks if the backend didn't send a JSON body
+            switch (status) {
+                case 400: return "Invalid request. Please check your inputs.";
+                case 401: return "Invalid email or password.";
+                case 403: return "You do not have permission to do this.";
+                case 404: return "The requested resource was not found.";
+                case 409: return "A conflict occurred (e.g., email already exists).";
+                default:
+                    if (status >= 500) return "Server error — please try again later.";
+            }
+        } 
+        
+        // E. Network errors / Timeouts
+        if (error.code === 'ECONNABORTED') return "Request timed out.";
+        if (error.request) return "Cannot connect to server. Please check your internet connection.";
     }
-  }
 
-  return "Something went wrong. Please try again.";
+    if (error instanceof Error && error.message.toLowerCase().includes("network")) {
+        return "Network error. Please check your connection.";
+    }
+
+    return "Something went wrong. Please try again.";
+}
+
+function capitalize(str: string): string {
+    if (!str) return "";
+    return str.charAt(0).toUpperCase() + str.slice(1);
 }

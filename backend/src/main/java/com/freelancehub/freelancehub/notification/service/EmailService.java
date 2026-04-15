@@ -2,6 +2,7 @@ package com.freelancehub.freelancehub.notification.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
@@ -16,7 +17,7 @@ public class EmailService {
 
     @Value("${resend.from-email}")
     private String fromEmail;
-    // JUST FOR TESTING
+
     @Value("${app.email.dev-override:}")
     private String devOverride;
 
@@ -28,13 +29,14 @@ public class EmailService {
                 .build();
     }
 
+    @Async
     public void send(String to, String subject, String html) {
         String recipient = devOverride.isBlank() ? to : devOverride;
 
         try {
             Map<String, Object> body = Map.of(
                     "from", fromEmail,
-                    "to", List.of(recipient), // ✅ use recipient here
+                    "to", List.of(recipient),
                     "subject", subject,
                     "html", html
             );

@@ -6,4 +6,7 @@ import jakarta.persistence.*;
 @Table(name = "admins")
 @DiscriminatorValue("ADMIN")
 @PrimaryKeyJoinColumn(name = "id")
-public class Admin extends User { }
+public class Admin extends User {
+
+    public Admin() { setRole(Role.ADMIN); }
+}

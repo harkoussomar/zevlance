@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import * as paymentApi from "../services/payment.service";
 import { isSafeStripeUrl } from "../utils/stripe-url";
 import { stripeKeys } from "../utils/stripe-keys";
-import { milestoneKeys } from "@/modules/milestone/hooks/useMilestone";
+import { milestoneKeys } from "@/modules/milestone/shared";
 
 // ─── Client: Fund a milestone ─────────────────────────────────────────────────
 

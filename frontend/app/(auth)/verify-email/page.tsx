@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Briefcase, ArrowLeft, RefreshCw } from "lucide-react";
-import { LeftDecorativePanel } from "@/modules/auth";
+import { LeftDecorativePanel, useLogout } from "@/modules/auth";
 import { Button } from "@/modules/shared/components/button";
 import { Alert } from "@/modules/shared/components/alert";
 import api from "@/modules/shared/lib/axios";
@@ -15,6 +15,7 @@ type Status = "pending" | "verifying" | "success" | "error";
 export default function VerifyEmailPage() {
   const router       = useRouter();
   const searchParams = useSearchParams();
+  const {handleLogout} = useLogout();
   const token        = searchParams.get("token") ?? "";
 
   const [status,       setStatus]       = useState<Status>(token ? "verifying" : "pending");
@@ -62,16 +63,7 @@ export default function VerifyEmailPage() {
     }
   };
 
-  // ── "Back to sign in" — clear session first then redirect ─────────────────
-  const handleBackToLogin = async () => {
-    try {
-      await api.post("/auth/logout");
-    } catch {
-      // ignore
-    } finally {
-      router.replace("/login");
-    }
-  };
+
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -84,9 +76,7 @@ export default function VerifyEmailPage() {
             <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
               <Briefcase className="w-4 h-4 text-primary-foreground" />
             </div>
-            <span className="font-bold text-foreground">
-              Freelance<span className="text-primary">Hub</span>
-            </span>
+            <span className="font-bold text-foreground">Zevlance</span>
           </div>
 
           {/* ── Pending: just registered, waiting for email ── */}
@@ -124,7 +114,7 @@ export default function VerifyEmailPage() {
               )}
 
               <button
-                onClick={handleBackToLogin}
+                onClick={handleLogout}
                 className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mt-2"
               >
                 <ArrowLeft className="w-4 h-4" />
@@ -204,7 +194,7 @@ export default function VerifyEmailPage() {
               )}
 
               <button
-                onClick={handleBackToLogin}
+                onClick={handleLogout}
                 className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" />

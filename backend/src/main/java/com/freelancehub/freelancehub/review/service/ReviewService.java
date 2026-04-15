@@ -16,6 +16,7 @@ import com.freelancehub.freelancehub.user.repository.ClientRepository;
 import com.freelancehub.freelancehub.user.repository.FreelancerRepository;
 import com.freelancehub.freelancehub.user.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,27 +32,14 @@ public class ReviewService {
     private final FreelancerRepository freelancerRepository;
     private final ClientRepository clientRepository;
 
-    // ── Both parties: leave review after contract completes ───────
-
     @Transactional
-    public ReviewResponse createReview(
-            String contractId,
-            CreateReviewRequest request,
-            String reviewerId
-    ) {
+    public ReviewResponse createReview(String contractId, CreateReviewRequest request, String reviewerId) {
         Contract contract = contractService.findContractById(contractId);
 
-        // Only COMPLETED contracts can be reviewed
         if (contract.getStatus() != ContractStatus.COMPLETED) {
             throw new IllegalStateException("Reviews can only be left on COMPLETED contracts");
         }
 
-        // Duplicate review check — one per party per contract
-        if (reviewRepository.existsByContractIdAndReviewerId(contractId, reviewerId)) {
-            throw new ConflictException("You have already reviewed this contract");
-        }
-
-        // Determine reviewer and reviewee based on who is submitting
         User reviewer = userService.findById(reviewerId);
         User reviewee = resolveReviewee(contract, reviewerId);
 
@@ -62,15 +50,15 @@ public class ReviewService {
         review.setRating(request.rating());
         review.setComment(request.comment());
 
-        reviewRepository.save(review);
+        try {
+            reviewRepository.saveAndFlush(review);
+        } catch (DataIntegrityViolationException e) {
+            throw new ConflictException("You have already reviewed this contract");
+        }
 
-        // Recalculate reviewee's rating
         updateRating(reviewee);
-
         return toResponse(review);
     }
-
-    // ── Public: get reviews for a freelancer ──────────────────────
 
     @Transactional(readOnly = true)
     public List<ReviewResponse> getFreelancerReviews(String freelancerId) {
@@ -80,8 +68,6 @@ public class ReviewService {
                 .toList();
     }
 
-    // ── Public: get reviews for a client ──────────────────────────
-
     @Transactional(readOnly = true)
     public List<ReviewResponse> getClientReviews(String clientId) {
         return reviewRepository.findByRevieweeId(clientId)
@@ -90,25 +76,19 @@ public class ReviewService {
                 .toList();
     }
 
-    // ── Helpers ───────────────────────────────────────────────────
-
-    // Determines who is being reviewed based on who is reviewing
     private User resolveReviewee(Contract contract, String reviewerId) {
         String freelancerId = contract.getBid().getFreelancer().getId();
         String clientId = contract.getBid().getProject().getClient().getId();
 
         if (reviewerId.equals(freelancerId)) {
-            // Freelancer is reviewing → reviewee is the Client
             return userService.findById(clientId);
         } else if (reviewerId.equals(clientId)) {
-            // Client is reviewing → reviewee is the Freelancer
             return userService.findById(freelancerId);
         } else {
             throw new UnauthorizedException("You are not a party to this contract");
         }
     }
 
-    // Recalculates and persists the average rating for a user
     private void updateRating(User reviewee) {
         Double avg = reviewRepository.calculateAverageRating(reviewee.getId());
         if (avg == null) return;
@@ -117,14 +97,10 @@ public class ReviewService {
 
         if (reviewee instanceof Freelancer freelancer) {
             freelancer.setRating(rounded);
-            freelancerRepository.save(freelancer);
         } else if (reviewee instanceof Client client) {
             client.setRating(rounded);
-            clientRepository.save(client);
         }
     }
-
-    // ── Mapping ───────────────────────────────────────────────────
 
     private ReviewResponse toResponse(Review r) {
         return new ReviewResponse(

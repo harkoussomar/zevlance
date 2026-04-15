@@ -1,11 +1,11 @@
-import { ClientProjectBidsPanel } from "@/modules/projects/components/ClientProjectBidsPanel";
+import { ProjectBidsPanel } from "@/modules/project/client";
 
 interface Props {
     params: Promise<{ id: string }>;
 }
 
-export default async function ProjectBidsPanel({ params }: Props) {
+export default async function ProjectBidsPanelPage({ params }: Props) {
     const { id } = await params;
 
-    return <ClientProjectBidsPanel projectId={id} />;
+    return <ProjectBidsPanel projectId={id} />;
 }

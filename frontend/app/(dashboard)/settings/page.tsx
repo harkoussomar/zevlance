@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
-import { SettingsPage } from "@/modules/settings";
+import { SettingsPage, StripeReturnIntent } from "@/modules/settings/shared";
 
 export const metadata: Metadata = { title: "Settings" };
 
-export type StripeReturnIntent = "success" | "refresh";
 
 interface Props {
   searchParams: Promise<{ stripe?: string }>;

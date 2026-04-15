@@ -1,6 +1,7 @@
 package com.freelancehub.freelancehub.user.service;
 
 import com.freelancehub.freelancehub.exception.NotFoundException;
+import com.freelancehub.freelancehub.exception.UnauthorizedException;
 import com.freelancehub.freelancehub.user.domain.Client;
 import com.freelancehub.freelancehub.user.domain.Freelancer;
 import com.freelancehub.freelancehub.user.domain.User;
@@ -9,6 +10,8 @@ import com.freelancehub.freelancehub.user.repository.ClientRepository;
 import com.freelancehub.freelancehub.user.repository.FreelancerRepository;
 import com.freelancehub.freelancehub.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,25 +29,16 @@ public class ProfileService {
 
     // ─── Client ───────────────────────────────────────────────────────────────
 
-    /**
-     * Returns the full client profile for the given ID.
-     * Should only be called for the authenticated user's own ID.
-     */
     @Transactional(readOnly = true)
     public ClientProfileResponse getClientProfile(String clientId) {
+        assertCurrentUser(clientId);
         Client client = requireClient(clientId);
         return toClientResponse(client);
     }
 
-    /**
-     * Applies a partial update to the client's profile.
-     * Null fields are ignored (patch semantics).
-     * Blank strings clear the field.
-     */
     @Transactional
-    public ClientProfileResponse updateClientProfile(
-            String clientId, UpdateClientProfileRequest req) {
-
+    public ClientProfileResponse updateClientProfile(String clientId, UpdateClientProfileRequest req) {
+        assertCurrentUser(clientId);
         Client client = requireClient(clientId);
 
         if (req.name() != null && !req.name().isBlank()) {
@@ -63,31 +57,21 @@ public class ProfileService {
             client.setWebsite(req.website().isBlank() ? null : req.website().strip());
         }
 
-        return toClientResponse(clientRepository.save(client));
+        return toClientResponse(client);
     }
 
     // ─── Freelancer ───────────────────────────────────────────────────────────
 
-    /**
-     * Returns the full freelancer profile for the given ID.
-     * Used for both the own profile and the public profile view.
-     */
     @Transactional(readOnly = true)
     public FreelancerProfileResponse getFreelancerProfile(String freelancerId) {
+        // No assertCurrentUser here so public profiles can be viewed
         Freelancer freelancer = requireFreelancer(freelancerId);
         return toFreelancerResponse(freelancer);
     }
 
-    /**
-     * Applies a partial update to the freelancer's profile.
-     * Null fields are ignored (patch semantics).
-     * Blank strings clear the field.
-     * Skills list is deduplicated and sanitised.
-     */
     @Transactional
-    public FreelancerProfileResponse updateFreelancerProfile(
-            String freelancerId, UpdateFreelancerProfileRequest req) {
-
+    public FreelancerProfileResponse updateFreelancerProfile(String freelancerId, UpdateFreelancerProfileRequest req) {
+        assertCurrentUser(freelancerId);
         Freelancer freelancer = requireFreelancer(freelancerId);
 
         if (req.name() != null && !req.name().isBlank()) {
@@ -111,18 +95,14 @@ public class ProfileService {
             freelancer.setSkills(sanitised);
         }
 
-        return toFreelancerResponse(freelancerRepository.save(freelancer));
+        return toFreelancerResponse(freelancer);
     }
 
     // ─── Password change (both roles) ─────────────────────────────────────────
 
-    /**
-     * Verifies the current password then replaces it with the new one.
-     * Intentionally not role-restricted — any authenticated user can change
-     * their own password. The caller must pass their own ID.
-     */
     @Transactional
     public void changePassword(String userId, UpdatePasswordRequest req) {
+        assertCurrentUser(userId);
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User not found: " + userId));
 
@@ -137,6 +117,18 @@ public class ProfileService {
     }
 
     // ─── Private helpers ──────────────────────────────────────────────────────
+
+    private void assertCurrentUser(String targetUserId) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            throw new UnauthorizedException("User not authenticated");
+        }
+        if (auth.getPrincipal() instanceof User currentUser) {
+            if (!currentUser.getId().equals(targetUserId)) {
+                throw new UnauthorizedException("You are not authorized to modify this profile");
+            }
+        }
+    }
 
     private Client requireClient(String id) {
         return clientRepository.findById(id)
@@ -161,8 +153,6 @@ public class ProfileService {
                 client.getCompanyDescription(),
                 client.getWebsite(),
                 client.getRating(),
-                // TODO: replace 0L with projectRepository.countByClientId(client.getId())
-                //       once the project module is wired into this service.
                 0L
         );
     }
@@ -178,8 +168,6 @@ public class ProfileService {
                 freelancer.getHourlyRate(),
                 freelancer.getRating(),
                 freelancer.getSkills(),
-                // TODO: replace 0L with contractRepository.countByFreelancerIdAndStatus(id, COMPLETED)
-                //       once the contract module is wired into this service.
                 0L
         );
     }

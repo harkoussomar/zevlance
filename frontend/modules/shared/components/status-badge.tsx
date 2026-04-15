@@ -6,10 +6,10 @@ import {
     MILESTONE_STATUS_STYLES,
     CATEGORY_STYLES,
 } from "@/modules/shared";
-import { BidStatus } from "@/modules/bid/types";
-import { ContractStatus } from "@/modules/contracts/types";
-import { MilestoneStatus } from "@/modules/milestone/types";
-import { ProjectCategory, ProjectStatus } from "@/modules/projects/types";
+import { BidStatus } from "@/modules/bid/shared";
+import { ContractStatus } from "@/modules/contracts/shared";
+import { MilestoneStatus } from "@/modules/milestone/shared";
+import { ProjectCategory, ProjectStatus } from "@/modules/project/shared";
 
 interface StatusBadgeProps {
     className?: string;
@@ -70,25 +70,28 @@ export function ContractStatusBadge({
 }
 
 export function MilestoneStatusBadge({
-  status,
-  className,
+    status,
+    className,
 }: { status?: MilestoneStatus } & StatusBadgeProps) {
-  const style = status ? MILESTONE_STATUS_STYLES[status] : undefined;
+    const style = status ? MILESTONE_STATUS_STYLES[status] : undefined;
 
-  // fallback if status is invalid/missing
-  const safeStyle = style ?? { className: "bg-gray-100 text-gray-500", label: "Unknown" };
+    // fallback if status is invalid/missing
+    const safeStyle = style ?? {
+        className: "bg-gray-100 text-gray-500",
+        label: "Unknown",
+    };
 
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full border",
-        safeStyle.className,
-        className,
-      )}
-    >
-      {safeStyle.label}
-    </span>
-  );
+    return (
+        <span
+            className={cn(
+                "inline-flex items-center text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full border",
+                safeStyle.className,
+                className,
+            )}
+        >
+            {safeStyle.label}
+        </span>
+    );
 }
 
 export function CategoryBadge({

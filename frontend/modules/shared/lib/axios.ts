@@ -55,7 +55,7 @@ api.interceptors.response.use(
   async (error: AxiosError<ApiError>) => {
     const status = error.response?.status;
 
-    if (status === 401 && !isPublicRequest(error)) {
+   /*  if (status === 401 && !isPublicRequest(error)) {
       if (typeof window !== "undefined") {
         try {
           await api.post("/auth/logout");
@@ -64,7 +64,7 @@ api.interceptors.response.use(
         useAuthStore.getState().logout();
         window.location.replace("/login");
       }
-    }
+    } */
     return Promise.reject(error);
   },
 );

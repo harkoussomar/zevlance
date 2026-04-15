@@ -1,5 +1,5 @@
-import { ContractsPage } from "@/modules/contracts/components/ContractsPage";
+import { ContractsPage } from "@/modules/contracts/shared";
 
 export default function FreelancerContractsPage() {
-  return <ContractsPage />
+    return <ContractsPage />;
 }

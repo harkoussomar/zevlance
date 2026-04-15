@@ -1,7 +1,7 @@
 import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/modules/shared";
-import { ProjectCategory, ProjectStatus } from "@/modules/projects/types";
+import type { ProjectCategory, ProjectStatus } from "@/modules/project/shared";
 import { Role } from "@/modules/shared/types";
 
 /* ─── Variants ───────────────────────────────────────────────────────────── */

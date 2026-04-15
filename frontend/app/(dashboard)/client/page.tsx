@@ -1,6 +1,5 @@
-import { ClientDashboard } from "@/modules/dashboard";
+import { ClientOverview } from "@/modules/overview/client";
 
-export default function DashboardPage() {
-  
-return <ClientDashboard/>
+export default function ClientOverviewPage() {
+    return <ClientOverview />;
 }

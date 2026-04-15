@@ -15,5 +15,6 @@ public record BidResponse(
         String coverLetter,
         int estimatedDays,
         BidStatus status,
-        LocalDateTime submittedAt
+        LocalDateTime submittedAt,
+        String contractId
 ) {}

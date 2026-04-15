@@ -43,6 +43,7 @@ public class UserService {
         if (!user.isActive()) {
             throw new IllegalStateException("User is already suspended");
         }
+
         user.setActive(false);
     }
 

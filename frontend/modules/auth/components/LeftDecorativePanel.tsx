@@ -8,7 +8,7 @@ export const LeftDecorativePanel = () => {
                     <div className="w-8 h-8 rounded-lg bg-background/15 flex items-center justify-center">
                         <Briefcase className="w-4.5 h-4.5 text-background" />
                     </div>
-                    <span className="text-lg font-bold">FreelanceHub</span>
+                    <span className="text-lg font-bold">Zevlance</span>
                 </div>
                 <h1 className="text-3xl font-bold leading-tight mb-4">
                     Start your journey with serious work.

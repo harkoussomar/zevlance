@@ -12,6 +12,7 @@ import com.freelancehub.freelancehub.dashboard.dto.*;
 import com.freelancehub.freelancehub.project.domain.ProjectStatus;
 import com.freelancehub.freelancehub.project.repository.ProjectRepository;
 import com.freelancehub.freelancehub.review.repository.ReviewRepository;
+import com.freelancehub.freelancehub.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +33,8 @@ public class DashboardService {
     private final BidRepository bidRepository;
     private final ReviewRepository reviewRepository;
     private final ProjectRepository projectRepository;
+
+    private final UserRepository userRepository;
 
     // ─── Freelancer Dashboard ─────────────────────────────────────────────────
 
@@ -102,7 +105,11 @@ public class DashboardService {
                 ))
                 .toList();
 
-        return new FreelancerDashboardResponse(stats, contractItems, recentBids, latestReviews);
+        UserSummaryDto user = userRepository.findById(freelancerId)
+                .map(u -> new UserSummaryDto(u.getId(), u.getName()))
+                .orElseThrow();
+
+        return new FreelancerDashboardResponse(user, stats, contractItems, recentBids, latestReviews);
     }
 
     // ─── Client Dashboard ─────────────────────────────────────────────────────
@@ -161,7 +168,11 @@ public class DashboardService {
                 ))
                 .toList();
 
-        return new ClientDashboardResponse(stats, recentProjects, contractItems);
+        UserSummaryDto user = userRepository.findById(clientId)
+                .map(u -> new UserSummaryDto(u.getId(), u.getName()))
+                .orElseThrow();
+
+        return new ClientDashboardResponse(user, stats, recentProjects, contractItems);
     }
 
     // ─── Shared milestone summary builder ─────────────────────────────────────

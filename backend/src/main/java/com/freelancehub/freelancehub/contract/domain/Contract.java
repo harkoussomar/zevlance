@@ -1,11 +1,14 @@
 package com.freelancehub.freelancehub.contract.domain;
 
 import com.freelancehub.freelancehub.bid.domain.Bid;
+import com.freelancehub.freelancehub.user.domain.Client;
+import com.freelancehub.freelancehub.user.domain.Freelancer;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UuidGenerator;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -20,7 +23,7 @@ import java.util.List;
 public class Contract {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @UuidGenerator
     @Column(length = 36)
     private String id;
 
@@ -40,8 +43,16 @@ public class Contract {
 
     private LocalDate endDate;
 
-    @OneToMany(mappedBy = "contract", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "contract", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Milestone> milestones = new ArrayList<>();
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "freelancer_id", nullable = false)
+    private Freelancer freelancer;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "client_id", nullable = false)
+    private Client client;
 
     @CreationTimestamp
     @Column(updatable = false)

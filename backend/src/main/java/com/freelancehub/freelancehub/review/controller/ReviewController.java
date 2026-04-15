@@ -9,7 +9,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.net.URI;
 import java.util.List;
 
 @RestController
@@ -19,18 +21,22 @@ public class ReviewController {
 
     private final ReviewService reviewService;
 
-    // POST /api/v1/contracts/{id}/reviews — both parties, once each
     @PostMapping("/contracts/{id}/reviews")
     public ResponseEntity<ReviewResponse> createReview(
             @PathVariable String id,
             @Valid @RequestBody CreateReviewRequest request,
             @AuthenticationPrincipal User currentUser
     ) {
-        return ResponseEntity.status(201)
-                .body(reviewService.createReview(id, request, currentUser.getId()));
+        ReviewResponse response = reviewService.createReview(id, request, currentUser.getId());
+
+        URI location = ServletUriComponentsBuilder.fromCurrentContextPath()
+                .path("/api/v1/reviews/{reviewId}")
+                .buildAndExpand(response.id())
+                .toUri();
+
+        return ResponseEntity.created(location).body(response);
     }
 
-    // GET /api/v1/freelancers/{id}/reviews — public
     @GetMapping("/freelancers/{id}/reviews")
     public ResponseEntity<List<ReviewResponse>> getFreelancerReviews(
             @PathVariable String id
@@ -38,7 +44,6 @@ public class ReviewController {
         return ResponseEntity.ok(reviewService.getFreelancerReviews(id));
     }
 
-    // GET /api/v1/clients/{id}/reviews — public
     @GetMapping("/clients/{id}/reviews")
     public ResponseEntity<List<ReviewResponse>> getClientReviews(
             @PathVariable String id

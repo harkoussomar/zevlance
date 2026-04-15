@@ -4,9 +4,9 @@ import { useCallback, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 
 import { Navbar } from "@/modules/landing-page/components/Navbar";
-import { ProjectDetailPanel, ProjectListPanel } from "@/modules/projects";
 import { Button } from "@/modules/shared/components/button";
 import { cn } from "@/modules/shared";
+import { ProjectDetailPanel, ProjectListPanel } from "@/modules/project/public";
 
 /**
  * ProjectsPage
@@ -54,7 +54,6 @@ export default function ProjectsPage() {
 
             {/* ── Split-panel container ──────────────────────────────────── */}
             <div className="flex flex-1 overflow-hidden mt-16 mx-auto w-full max-w-400">
-
                 {/* ── Left: Project list ───────────────────────────────────── */}
                 <aside
                     className={cn(

@@ -12,13 +12,11 @@ export default function LoginPage() {
             <div className="flex-1 flex items-center justify-center p-6 lg:p-12">
                 <div className="w-full max-w-sm">
                     {/* Mobile logo */}
-                    <div className="flex items-center gap-2 mb-8 lg:hidden">
+                        <div className="flex items-center gap-2 mb-8 lg:hidden">
                         <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
                             <Briefcase className="w-4 h-4 text-primary-foreground" />
                         </div>
-                        <span className="font-bold text-foreground">
-                            Freelance<span className="text-primary">Hub</span>
-                        </span>
+                        <span className="font-bold text-foreground">Zevlance</span>
                     </div>
 
                     <h2 className="text-2xl font-bold text-foreground mb-1">

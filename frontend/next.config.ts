@@ -1,6 +1,7 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
+    reactStrictMode: false, // ← add this
   experimental: {
     staleTimes: {
       dynamic: 30,

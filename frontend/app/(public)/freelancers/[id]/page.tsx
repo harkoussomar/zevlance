@@ -1,4 +1,4 @@
-import { FreelancerProfilePage } from "@/modules/profile/components/FreelancerProfilePage";
+import { FreelancerProfilePage } from "@/modules/profile/freelancer/components/FreelancerProfilePage";
 
 
 interface Props {

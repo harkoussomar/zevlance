@@ -1,5 +1,5 @@
-import { ClientProfilePage } from "@/modules/profile/components/ClientProfilePage";
+import { ClientProfilePage } from "@/modules/profile/client/components/ClientProfilePage";
 
 export default function ClientProfile() {
-  return <ClientProfilePage />;
+    return <ClientProfilePage />;
 }

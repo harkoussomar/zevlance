@@ -9,45 +9,57 @@ interface StatCardProps {
     className?: string;
 }
 
-export function StatCard({
-    label,
-    value,
-    icon,
-    trend,
-    className,
-}: StatCardProps) {
+export function StatCard({ label, value, icon, trend, className }: StatCardProps) {
     return (
         <Card
             className={cn(
-                "group hover:border-primary/30 hover:shadow-md transition-all duration-200",
+                "group relative overflow-hidden transition-all duration-300",
+                "hover:border-primary/40 hover:shadow-lg hover:-translate-y-0.5",
                 className,
             )}
         >
-            <CardContent className="p-5">
-                <div className="flex items-start justify-between mb-3">
-                    <span className="text-sm font-medium text-muted-foreground">
+            {/* Subtle gradient overlay on hover */}
+            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                style={{
+                    background: "radial-gradient(ellipse 80% 60% at 80% 20%, oklch(from var(--primary) l c h / 0.05) 0%, transparent 70%)",
+                }}
+            />
+
+            <CardContent className="p-5 relative">
+                <div className="flex items-start justify-between mb-4">
+                    <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/80">
                         {label}
                     </span>
                     {icon && (
-                        <div className="p-2 rounded-lg bg-primary/8 text-primary group-hover:bg-primary/12 transition-colors">
+                        <div className={cn(
+                            "p-2 rounded-xl transition-all duration-300",
+                            "bg-primary/8 text-primary",
+                            "group-hover:bg-primary/14 group-hover:scale-110 group-hover:shadow-sm",
+                        )}>
                             {icon}
                         </div>
                     )}
                 </div>
-                <div className="text-2xl font-bold text-foreground tracking-tight">
+
+                <div className="text-2xl font-bold text-foreground tracking-tight font-display tabular-nums">
                     {value}
                 </div>
-                {trend && (
-                    <p
-                        className={cn(
-                            "text-xs font-medium mt-1.5",
-                            trend.positive
-                                ? "text-emerald-600 dark:text-emerald-400"
-                                : "text-destructive",
-                        )}
-                    >
-                        {trend.positive ? "↑" : "↓"} {trend.value}
+
+                {trend ? (
+                    <p className={cn(
+                        "text-xs font-semibold mt-2 flex items-center gap-1",
+                        trend.positive ? "text-success" : "text-destructive",
+                    )}>
+                        <span className={cn(
+                            "inline-flex items-center justify-center w-4 h-4 rounded-full text-[10px]",
+                            trend.positive ? "bg-success/12" : "bg-destructive/12",
+                        )}>
+                            {trend.positive ? "↑" : "↓"}
+                        </span>
+                        {trend.value}
                     </p>
+                ) : (
+                    <div className="mt-2 h-1.5 w-12 rounded-full bg-primary/15 group-hover:w-16 transition-all duration-500" />
                 )}
             </CardContent>
         </Card>

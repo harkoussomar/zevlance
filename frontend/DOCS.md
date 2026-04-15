@@ -1,25 +1,25 @@
-# FreelanceHub — Frontend Documentation
+# Zevlance — Frontend Documentation
 
-> A modern freelance marketplace platform built with Next.js, connecting ddients with freelancers through project posting, bidding, contracts, and payments.
+> A modern freelance marketplace platform built with Next.js, connecting clients with freelancers through project posting, bidding, contracts, and payments.
 
 ---
 
 ## Tech Stack
 
-| Category | Technology |
-|---|---|
-| **Framework** | Next.js 16 (App Router) |
-| **Language** | TypeScript 5 |
-| **UI Library** | React 19 |
-| **Styling** | Tailwind CSS 4 |
-| **Components** | Radix UI + shadcn/ui |
+| Category             | Technology                                 |
+| -------------------- | ------------------------------------------ |
+| **Framework**        | Next.js 16 (App Router)                    |
+| **Language**         | TypeScript 5                               |
+| **UI Library**       | React 19                                   |
+| **Styling**          | Tailwind CSS 4                             |
+| **Components**       | Radix UI + shadcn/ui                       |
 | **State Management** | Zustand (auth), React Query (server state) |
-| **Forms** | React Hook Form + Zod validation |
-| **HTTP Client** | Axios |
-| **Icons** | Lucide React |
-| **Toasts** | Sonner |
-| **Theme** | next-themes (dark/light/system) |
-| **Linting** | ESLint + eslint-config-next |
+| **Forms**            | React Hook Form + Zod validation           |
+| **HTTP Client**      | Axios                                      |
+| **Icons**            | Lucide React                               |
+| **Toasts**           | Sonner                                     |
+| **Theme**            | next-themes (dark/light/system)            |
+| **Linting**          | ESLint + eslint-config-next                |
 
 ---
 
@@ -68,7 +68,7 @@ frontend/
 │   │   ├── types.ts
 │   │   └── index.ts
 │   ├── bid/                      # Bidding system
-│   │   ├── components/           # FreelancerBidForm, FreelancerBidCard, ClientBidCard, FreelancerBidsPanel, ClientProjectBidsPanel
+│   │   ├── components/           # FreelancerBidForm, FreelancerBidCard, BidCard, BidsPanel, ProjectBidsPanel
 │   │   ├── config/               # Status, tabs, stat configurations
 │   │   ├── schemas/              # submit-bid.schema.ts
 │   │   ├── services/             # freelancer.bid.service, client.bid.service
@@ -149,11 +149,11 @@ The app follows a **feature-module architecture** where each business domain (au
 
 ### State Management
 
-| Layer | Tool | Purpose |
-|---|---|---|
-| Auth session | Zustand (`store/auth-store.ts`) | Stores user identity, role, auth status |
-| Server data | React Query (`@tanstack/react-query`) | Cached API responses, mutations |
-| Form state | React Hook Form | Controlled form inputs + validation |
+| Layer        | Tool                                  | Purpose                                 |
+| ------------ | ------------------------------------- | --------------------------------------- |
+| Auth session | Zustand (`store/auth-store.ts`)       | Stores user identity, role, auth status |
+| Server data  | React Query (`@tanstack/react-query`) | Cached API responses, mutations         |
+| Form state   | React Hook Form                       | Controlled form inputs + validation     |
 
 ### Authentication Flow
 
@@ -178,46 +178,46 @@ Dashboard routes are separated under `/client/*` and `/freelancer/*` with a shar
 
 ### Public Routes
 
-| Route | Description |
-|---|---|
-| `/` | Landing page (hero, features, testimonials, CTA) |
-| `/projects` | Browse all public projects |
-| `/freelancers/[id]` | Public freelancer profile view |
+| Route               | Description                                      |
+| ------------------- | ------------------------------------------------ |
+| `/`                 | Landing page (hero, features, testimonials, CTA) |
+| `/projects`         | Browse all public projects                       |
+| `/freelancers/[id]` | Public freelancer profile view                   |
 
 ### Auth Routes
 
-| Route | Description |
-|---|---|
-| `/login` | User login form |
+| Route       | Description            |
+| ----------- | ---------------------- |
+| `/login`    | User login form        |
 | `/register` | User registration form |
 
 ### Client Dashboard Routes
 
-| Route | Description |
-|---|---|
-| `/client` | Client dashboard home |
-| `/client/projects` | List all client's projects |
-| `/client/projects/create` | Create a new project |
-| `/client/projects/[id]` | Project detail with bids panel |
-| `/client/projects/[id]/edit` | Edit an existing project |
-| `/client/contracts` | List all client contracts |
-| `/client/contracts/[id]` | Contract detail view |
-| `/client/profile` | Client profile page |
+| Route                        | Description                    |
+| ---------------------------- | ------------------------------ |
+| `/client`                    | Client dashboard home          |
+| `/client/projects`           | List all client's projects     |
+| `/client/projects/create`    | Create a new project           |
+| `/client/projects/[id]`      | Project detail with bids panel |
+| `/client/projects/[id]/edit` | Edit an existing project       |
+| `/client/contracts`          | List all client contracts      |
+| `/client/contracts/[id]`     | Contract detail view           |
+| `/client/profile`            | Client profile page            |
 
 ### Freelancer Dashboard Routes
 
-| Route | Description |
-|---|---|
-| `/freelancer` | Freelancer dashboard home |
-| `/freelancer/bids` | Freelancer's submitted bids |
-| `/freelancer/contracts` | List freelancer contracts |
-| `/freelancer/contracts/[id]` | Contract detail view |
-| `/freelancer/profile` | Freelancer profile page |
+| Route                        | Description                 |
+| ---------------------------- | --------------------------- |
+| `/freelancer`                | Freelancer dashboard home   |
+| `/freelancer/bids`           | Freelancer's submitted bids |
+| `/freelancer/contracts`      | List freelancer contracts   |
+| `/freelancer/contracts/[id]` | Contract detail view        |
+| `/freelancer/profile`        | Freelancer profile page     |
 
 ### Shared Routes
 
-| Route | Description |
-|---|---|
+| Route       | Description                                       |
+| ----------- | ------------------------------------------------- |
 | `/settings` | User settings (profile, password, Stripe Connect) |
 
 ---

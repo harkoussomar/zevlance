@@ -10,7 +10,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.net.URI;
 import java.util.List;
 
 @RestController
@@ -20,18 +22,22 @@ public class MilestoneController {
 
     private final MilestoneService milestoneService;
 
-    // POST /api/v1/contracts/{id}/milestones — CLIENT
     @PostMapping("/contracts/{id}/milestones")
     public ResponseEntity<MilestoneResponse> createMilestone(
             @PathVariable String id,
             @Valid @RequestBody CreateMilestoneRequest request,
             @AuthenticationPrincipal User currentUser
     ) {
-        return ResponseEntity.status(201)
-                .body(milestoneService.createMilestone(id, request, currentUser.getId()));
+        MilestoneResponse response = milestoneService.createMilestone(id, request, currentUser.getId());
+
+        URI location = ServletUriComponentsBuilder.fromCurrentContextPath()
+                .path("/api/v1/milestones/{milestoneId}")
+                .buildAndExpand(response.id())
+                .toUri();
+
+        return ResponseEntity.created(location).body(response);
     }
 
-    // GET /api/v1/contracts/{id}/milestones — both parties
     @GetMapping("/contracts/{id}/milestones")
     public ResponseEntity<List<MilestoneResponse>> getMilestones(
             @PathVariable String id,
@@ -40,7 +46,6 @@ public class MilestoneController {
         return ResponseEntity.ok(milestoneService.getMilestones(id, currentUser.getId()));
     }
 
-    // PUT /api/v1/milestones/{id}/submit — FREELANCER
     @PutMapping("/milestones/{id}/submit")
     public ResponseEntity<MilestoneResponse> submitDeliverable(
             @PathVariable String id,
@@ -52,7 +57,6 @@ public class MilestoneController {
         );
     }
 
-    // PUT /api/v1/milestones/{id}/approve — CLIENT
     @PutMapping("/milestones/{id}/approve")
     public ResponseEntity<MilestoneResponse> approveMilestone(
             @PathVariable String id,
@@ -61,7 +65,6 @@ public class MilestoneController {
         return ResponseEntity.ok(milestoneService.approveMilestone(id, currentUser.getId()));
     }
 
-    // PUT /api/v1/milestones/{id}/revision — CLIENT
     @PutMapping("/milestones/{id}/revision")
     public ResponseEntity<MilestoneResponse> requestRevision(
             @PathVariable String id,

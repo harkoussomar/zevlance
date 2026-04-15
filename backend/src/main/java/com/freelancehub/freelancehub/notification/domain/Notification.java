@@ -7,6 +7,7 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -41,8 +42,9 @@ public class Notification {
     @Column(length = 36)
     private String referenceId;
 
+    @Enumerated(EnumType.STRING)
     @Column(length = 30)
-    private String referenceType; // "BID" | "CONTRACT" | "MILESTONE" | "PAYMENT"
+    private ReferenceType referenceType;
 
     @CreationTimestamp
     @Column(updatable = false)

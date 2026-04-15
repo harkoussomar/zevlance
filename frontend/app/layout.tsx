@@ -4,26 +4,38 @@ import "./globals.css";
 import { cookies } from "next/headers";
 import { Suspense } from "react";
 import { Toaster } from "sonner";
-import { AuthProvider, ReactQueryProvider, ThemeProvider } from "@/modules/shared";
+import {
+    AuthProvider,
+    ReactQueryProvider,
+    ThemeProvider,
+} from "@/modules/shared";
 
 const displayFont = Bricolage_Grotesque({
     subsets: ["latin"],
     variable: "--font-display",
     weight: ["400", "500", "600", "700", "800"],
+    display: "swap",
+    preload: true, // primary display font — preload it
 });
+
 const sansFont = DM_Sans({
     subsets: ["latin"],
     variable: "--font-sans",
     weight: ["300", "400", "500", "600", "700"],
+    display: "swap",
+    preload: true, // body font used everywhere — preload it
 });
+
 const monoFont = DM_Mono({
     subsets: ["latin"],
     variable: "--font-mono",
     weight: ["300", "400", "500"],
+    display: "swap",
+    preload: false, // code blocks only — lazy load is fine
 });
 
 export const metadata: Metadata = {
-    title: "FreelanceHub — Where Great Work Gets Done",
+    title: "Zevlance — Where Great Work Gets Done",
     description: "Connect with elite freelancers...",
 };
 
@@ -48,10 +60,12 @@ export default function RootLayout({
             className={`${displayFont.variable} ${sansFont.variable} ${monoFont.variable} antialiased`}
             suppressHydrationWarning
         >
-            <body>
+            <body
+            suppressHydrationWarning
+            >
                 <ThemeProvider
                     attribute="class"
-                    defaultTheme="system"
+                    defaultTheme="dark"
                     enableSystem
                     disableTransitionOnChange
                 >
@@ -60,8 +74,8 @@ export default function RootLayout({
                             <AuthWrapper>{children}</AuthWrapper>
                         </Suspense>
                     </ReactQueryProvider>
+                    <Toaster />
                 </ThemeProvider>
-                <Toaster />
             </body>
         </html>
     );

@@ -1,14 +1,18 @@
 package com.freelancehub.freelancehub.contract.controller;
 
+import com.freelancehub.freelancehub.contract.domain.ContractStatus;
 import com.freelancehub.freelancehub.contract.dto.ContractResponse;
+import com.freelancehub.freelancehub.contract.dto.ContractSummaryResponse;
 import com.freelancehub.freelancehub.contract.service.ContractService;
 import com.freelancehub.freelancehub.user.domain.User;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/contracts")
@@ -17,15 +21,28 @@ public class ContractController {
 
     private final ContractService contractService;
 
-    // GET /api/v1/contracts/my — both parties
-    @GetMapping("/my")
-    public ResponseEntity<List<ContractResponse>> getMyContracts(
+    // ─── GET /api/v1/contracts/my/summary ─────────────────────────────────────
+    // Must be declared BEFORE /my to avoid Spring matching "summary" as {id}.
+    @GetMapping("/my/summary")
+    public ResponseEntity<ContractSummaryResponse> getMyContractsSummary(
             @AuthenticationPrincipal User currentUser
     ) {
-        return ResponseEntity.ok(contractService.getMyContracts(currentUser.getId()));
+        return ResponseEntity.ok(contractService.getMyContractsSummary(currentUser.getId()));
     }
 
-    // GET /api/v1/contracts/{id} — both parties
+    // ─── GET /api/v1/contracts/my?status=ACTIVE&page=0&size=10 ────────────────
+    @GetMapping("/my")
+    public ResponseEntity<Page<ContractResponse>> getMyContracts(
+            @AuthenticationPrincipal User currentUser,
+            @RequestParam(required = false) ContractStatus status,
+            @RequestParam(defaultValue = "0")  int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        return ResponseEntity.ok(contractService.getMyContracts(currentUser.getId(), status, pageable));
+    }
+
+    // ─── GET /api/v1/contracts/{id} ───────────────────────────────────────────
     @GetMapping("/{id}")
     public ResponseEntity<ContractResponse> getContract(
             @PathVariable String id,
@@ -34,7 +51,7 @@ public class ContractController {
         return ResponseEntity.ok(contractService.getContract(id, currentUser.getId()));
     }
 
-    // PUT /api/v1/contracts/{id}/complete — CLIENT
+    // ─── PUT /api/v1/contracts/{id}/complete — CLIENT ─────────────────────────
     @PutMapping("/{id}/complete")
     public ResponseEntity<ContractResponse> completeContract(
             @PathVariable String id,
@@ -43,7 +60,7 @@ public class ContractController {
         return ResponseEntity.ok(contractService.completeContract(id, currentUser.getId()));
     }
 
-    // PUT /api/v1/contracts/{id}/cancel — both parties
+    // ─── PUT /api/v1/contracts/{id}/cancel — both parties ────────────────────
     @PutMapping("/{id}/cancel")
     public ResponseEntity<ContractResponse> cancelContract(
             @PathVariable String id,
@@ -52,7 +69,7 @@ public class ContractController {
         return ResponseEntity.ok(contractService.cancelContract(id, currentUser.getId()));
     }
 
-    // PUT /api/v1/contracts/{id}/dispute — both parties
+    // ─── PUT /api/v1/contracts/{id}/dispute — both parties ───────────────────
     @PutMapping("/{id}/dispute")
     public ResponseEntity<ContractResponse> disputeContract(
             @PathVariable String id,

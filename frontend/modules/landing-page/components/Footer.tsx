@@ -23,10 +23,7 @@ export function Footer() {
                             <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
                                 <Briefcase className="w-4 h-4 text-primary-foreground" />
                             </div>
-                            <span className="font-bold text-foreground">
-                                Freelance
-                                <span className="text-primary">Hub</span>
-                            </span>
+                            <span className="font-bold text-foreground">Zevlance</span>
                         </div>
                         <p className="text-xs text-muted-foreground leading-relaxed max-w-50">
                             Where serious clients meet world-class freelancers.
@@ -58,7 +55,7 @@ export function Footer() {
                 {/* Bottom bar */}
                 <div className="pt-8 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4">
                     <p className="text-xs text-muted-foreground">
-                        © 2026 FreelanceHub. All rights reserved.
+                        © 2026 Zevlance. All rights reserved.
                     </p>
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                         <span className="relative flex h-1.5 w-1.5">

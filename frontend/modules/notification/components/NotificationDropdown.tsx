@@ -5,32 +5,23 @@ import { cn } from "@/modules/shared";
 import { selectRole, useAuthStore } from "@/store/auth-store";
 import { useNotifications, useMarkAllAsRead, useMarkAsRead } from "../hooks/useNotifications";
 import { NotificationItem } from "./NotificationItem";
-import type { Notification } from "../types";
+import type { Notification } from "../types/notification";
 
 // ─── Routing helper ───────────────────────────────────────────────────────────
 
-function resolveUrl(
-  notification: Notification,
-  role: string,
-): string {
+function resolveUrl(notification: Notification, role: string): string {
   const { referenceType, referenceId } = notification;
   const isClient = role === "CLIENT";
 
   switch (referenceType) {
     case "BID":
-      return isClient
-        ? `/client/projects/${referenceId}`
-        : `/freelancer/bids`;
+      return isClient ? `/client/projects/${referenceId}` : `/freelancer/bids`;
     case "CONTRACT":
-      return isClient
-        ? `/client/contracts/${referenceId}`
-        : `/freelancer/contracts/${referenceId}`;
+      return isClient ? `/client/contracts/${referenceId}` : `/freelancer/contracts/${referenceId}`;
     case "MILESTONE":
       return isClient ? `/client/contracts` : `/freelancer/contracts`;
     case "PAYMENT":
-      return isClient
-        ? `/client/contracts/${referenceId}`
-        : `/freelancer/contracts/${referenceId}`;
+      return isClient ? `/client/contracts/${referenceId}` : `/freelancer/contracts/${referenceId}`;
     default:
       return isClient ? `/client/dashboard` : `/freelancer/dashboard`;
   }
@@ -54,41 +45,28 @@ function SkeletonItem() {
 // ─── NotificationDropdown ─────────────────────────────────────────────────────
 
 interface Props {
-  isOpen: boolean;
-  onClose: () => void;
   unreadCount: number;
 }
 
-export function NotificationDropdown({ isOpen, onClose, unreadCount }: Props) {
+export function NotificationDropdown({ unreadCount }: Props) {
   const router = useRouter();
   const role = useAuthStore(selectRole);
 
-  const { data, isLoading } = useNotifications(isOpen);
+  const { data, isLoading } = useNotifications(true);
   const { mutate: markAsRead } = useMarkAsRead();
   const { mutate: markAllAsRead, isPending: markingAll } = useMarkAllAsRead();
 
-
   const notifications = data?.content ?? [];
-  console.log(notifications)
-
 
   function handleItemClick(notification: Notification) {
     if (!notification.read) {
       markAsRead(notification.id);
     }
-    onClose();
     router.push(resolveUrl(notification, role));
   }
 
   return (
-    <div
-      className={cn(
-        "absolute right-0 top-full mt-2 z-50",
-        "w-80 sm:w-96",
-        "rounded-xl border border-border bg-background shadow-lg",
-        "flex flex-col overflow-hidden",
-      )}
-    >
+    <div className="flex flex-col bg-background">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
         <span className="font-semibold text-sm text-foreground">
@@ -109,7 +87,7 @@ export function NotificationDropdown({ isOpen, onClose, unreadCount }: Props) {
       </div>
 
       {/* Body */}
-      <div className="overflow-y-auto max-h-1.5">
+      <div className="overflow-y-auto max-h-96">
         {isLoading ? (
           <>
             <SkeletonItem />
@@ -131,7 +109,7 @@ export function NotificationDropdown({ isOpen, onClose, unreadCount }: Props) {
             <NotificationItem
               key={notification.id}
               notification={notification}
-              onClick={() => handleItemClick(notification)}
+              onSelect={() => handleItemClick(notification)}
             />
           ))
         )}

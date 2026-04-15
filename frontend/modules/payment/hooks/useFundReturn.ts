@@ -14,8 +14,8 @@ import { useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { milestoneKeys } from "@/modules/milestone/shared";
 
-import { milestoneKeys } from "@/modules/milestone/hooks/useMilestone";
 
 /**
  * Handles the browser's return from Stripe Checkout.

@@ -3,6 +3,7 @@ package com.freelancehub.freelancehub.bid.service;
 import com.freelancehub.freelancehub.bid.domain.Bid;
 import com.freelancehub.freelancehub.bid.domain.BidStatus;
 import com.freelancehub.freelancehub.bid.dto.BidResponse;
+import com.freelancehub.freelancehub.bid.dto.BidSummaryResponse;
 import com.freelancehub.freelancehub.bid.dto.CreateBidRequest;
 import com.freelancehub.freelancehub.bid.repository.BidRepository;
 import com.freelancehub.freelancehub.contract.domain.Contract;
@@ -12,6 +13,7 @@ import com.freelancehub.freelancehub.exception.ConflictException;
 import com.freelancehub.freelancehub.exception.NotFoundException;
 import com.freelancehub.freelancehub.exception.UnauthorizedException;
 import com.freelancehub.freelancehub.notification.domain.NotificationType;
+import com.freelancehub.freelancehub.notification.domain.ReferenceType;
 import com.freelancehub.freelancehub.notification.service.EmailTemplates;
 import com.freelancehub.freelancehub.notification.service.NotificationService;
 import com.freelancehub.freelancehub.project.domain.Project;
@@ -27,15 +29,11 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
-import java.util.UUID;
-
 @Service
 @RequiredArgsConstructor
 public class BidService {
 
     private final BidRepository bidRepository;
-
     private final ContractService contractService;
     private final ProjectService projectService;
     private final UserService userService;
@@ -44,20 +42,17 @@ public class BidService {
     @Value("${app.frontend-url}")
     private String frontendUrl;
 
-    // ── Freelancer: submit bid ────────────────────────────────────
+    // ── existing methods (unchanged) ─────────────────────────────────────────
 
     @PreAuthorize("hasRole('FREELANCER')")
     @Transactional
     public BidResponse submitBid(String projectId, CreateBidRequest request, String freelancerId) {
-
         Project project = projectService.findProjectById(projectId);
 
-        // Only OPEN projects accept bids
         if (project.getStatus() != ProjectStatus.OPEN) {
             throw new IllegalStateException("Project is not open for bidding");
         }
 
-        // Duplicate bid check — enforced by DB unique constraint + this check
         if (bidRepository.existsByFreelancerIdAndProjectId(freelancerId, projectId)) {
             throw new ConflictException("You have already submitted a bid on this project");
         }
@@ -65,7 +60,6 @@ public class BidService {
         Freelancer freelancer = userService.findFreelancerById(freelancerId);
 
         Bid bid = new Bid();
-
         bid.setFreelancer(freelancer);
         bid.setProject(project);
         bid.setProposedPrice(request.proposedPrice());
@@ -76,11 +70,12 @@ public class BidService {
 
         notificationService.notifyWithEmail(
                 project.getClient().getId(),
+                project.getClient().getEmail(),
                 NotificationType.BID_RECEIVED,
                 "New bid on \"" + project.getTitle() + "\"",
                 freelancer.getName() + " submitted a bid of $" + request.proposedPrice(),
                 bid.getId(),
-                "BID",
+                ReferenceType.BID,
                 "New bid on your project",
                 EmailTemplates.bidReceived(
                         project.getClient().getName(),
@@ -93,8 +88,6 @@ public class BidService {
         return toResponse(bid);
     }
 
-    // ── Client: view bids on own project ─────────────────────────
-
     @PreAuthorize("hasRole('CLIENT')")
     @Transactional(readOnly = true)
     public Page<BidResponse> getProjectBids(String projectId, String clientId, Pageable pageable) {
@@ -106,16 +99,6 @@ public class BidService {
 
         return bidRepository.findByProjectId(projectId, pageable).map(this::toResponse);
     }
-
-    // ── Freelancer: view own bids ─────────────────────────────────
-
-    @PreAuthorize("hasRole('FREELANCER')")
-    @Transactional(readOnly = true)
-    public Page<BidResponse> getMyBids(String freelancerId, Pageable pageable) {
-        return bidRepository.findByFreelancerId(freelancerId, pageable).map(this::toResponse);
-    }
-
-    // ── Freelancer: withdraw bid ──────────────────────────────────
 
     @PreAuthorize("hasRole('FREELANCER')")
     @Transactional
@@ -137,13 +120,12 @@ public class BidService {
                 NotificationType.BID_WITHDRAWN,
                 "A freelancer withdrew their bid",
                 bid.getFreelancer().getName() + " withdrew their bid on \"" + bid.getProject().getTitle() + "\"",
-                bid.getId(), "BID"
+                bid.getId(),
+                ReferenceType.BID
         );
 
         return toResponse(bid);
     }
-
-    // ── Client: reject bid ────────────────────────────────────────
 
     @PreAuthorize("hasRole('CLIENT')")
     @Transactional
@@ -159,27 +141,18 @@ public class BidService {
 
         notificationService.notifyWithEmail(
                 bid.getFreelancer().getId(),
+                bid.getFreelancer().getEmail(),
                 NotificationType.BID_REJECTED,
                 "Your bid was not selected",
                 "Your bid on \"" + bid.getProject().getTitle() + "\" was rejected.",
-                bid.getId(), "BID",
+                bid.getId(),
+                ReferenceType.BID,
                 "Bid update",
                 EmailTemplates.bidRejected(bid.getFreelancer().getName(), bid.getProject().getTitle())
         );
 
         return toResponse(bid);
     }
-
-    // ── Client: accept bid — FULLY ATOMIC ─────────────────────────
-    //
-    //  One @Transactional boundary:
-    //  1. Validate client owns the project
-    //  2. Validate bid is PENDING
-    //  3. Set bid → ACCEPTED
-    //  4. Reject all other PENDING bids on the same project
-    //  5. Set project → IN_PROGRESS
-    //  6. Create Contract
-    //  If any step throws → entire transaction rolls back
 
     @PreAuthorize("hasRole('CLIENT')")
     @Transactional
@@ -196,25 +169,20 @@ public class BidService {
             throw new IllegalStateException("Project is no longer open");
         }
 
-        // Step 1: accept this bid
         bid.setStatus(BidStatus.ACCEPTED);
-
-        // Step 2: reject all other pending bids on this project
         bidRepository.rejectOtherBids(project.getId(), bidId, BidStatus.REJECTED);
-
-        // Step 3: flip project to IN_PROGRESS
         project.setStatus(ProjectStatus.IN_PROGRESS);
 
-        // Step 4: create contract
         ContractResponse contractResponse = contractService.createContract(bid);
 
-        // Step 5: send notification
         notificationService.notifyWithEmail(
                 bid.getFreelancer().getId(),
+                bid.getFreelancer().getEmail(),
                 NotificationType.BID_ACCEPTED,
                 "Your bid was accepted! 🎉",
                 "Your bid on \"" + bid.getProject().getTitle() + "\" was accepted. Contract is now active.",
-                bid.getId(), "BID",
+                bid.getId(),
+                ReferenceType.BID,
                 "Your bid was accepted!",
                 EmailTemplates.bidAccepted(
                         bid.getFreelancer().getName(),
@@ -225,7 +193,44 @@ public class BidService {
 
         return contractResponse;
     }
-    // ── Helpers ───────────────────────────────────────────────────
+
+    // ── new / modified ────────────────────────────────────────────────────────
+
+    /**
+     * Returns a paginated list of the freelancer's bids.
+     * When {@code status} is {@code null} all statuses are returned.
+     */
+    @PreAuthorize("hasRole('FREELANCER')")
+    @Transactional(readOnly = true)
+    public Page<BidResponse> getMyBids(String freelancerId, BidStatus status, Pageable pageable) {
+        if (status == null) {
+            return bidRepository.findByFreelancerId(freelancerId, pageable).map(this::toResponse);
+        }
+        return bidRepository.findByFreelancerIdAndStatus(freelancerId, status, pageable).map(this::toResponse);
+    }
+
+    /**
+     * Returns aggregate counts and financial metrics for the freelancer's bids.
+     * Completely independent from the paginated list — safe to call once on mount.
+     */
+    @PreAuthorize("hasRole('FREELANCER')")
+    @Transactional(readOnly = true)
+    public BidSummaryResponse getMyBidsSummary(String freelancerId) {
+        long pending   = bidRepository.countByFreelancerIdAndStatus(freelancerId, BidStatus.PENDING);
+        long accepted  = bidRepository.countByFreelancerIdAndStatus(freelancerId, BidStatus.ACCEPTED);
+        long rejected  = bidRepository.countByFreelancerIdAndStatus(freelancerId, BidStatus.REJECTED);
+        long withdrawn = bidRepository.countByFreelancerIdAndStatus(freelancerId, BidStatus.WITHDRAWN);
+        long total     = pending + accepted + rejected + withdrawn;
+
+        double totalValue   = bidRepository.sumAcceptedValueByFreelancerId(freelancerId);
+        double successRate  = total > 0
+                ? Math.round((accepted * 100.0 / total) * 10.0) / 10.0
+                : 0.0;
+
+        return new BidSummaryResponse(pending, accepted, rejected, withdrawn, totalValue, successRate);
+    }
+
+    // ── private helpers ───────────────────────────────────────────────────────
 
     private Bid findBidById(String id) {
         return bidRepository.findById(id)
@@ -238,8 +243,6 @@ public class BidService {
         }
     }
 
-    // ── Mapping ───────────────────────────────────────────────────
-
     private BidResponse toResponse(Bid b) {
         return new BidResponse(
                 b.getId(),
@@ -251,27 +254,8 @@ public class BidService {
                 b.getCoverLetter(),
                 b.getEstimatedDays(),
                 b.getStatus(),
-                b.getSubmittedAt()
-        );
-    }
-
-    private ContractResponse toContractResponse(Contract c) {
-        Bid bid = c.getBid();
-        Project project = bid.getProject();
-        return new ContractResponse(
-                c.getId(),
-                bid.getId(),
-                project.getId(),
-                project.getTitle(),
-                bid.getFreelancer().getId(),
-                bid.getFreelancer().getName(),
-                project.getClient().getId(),
-                project.getClient().getName(),
-                c.getStatus(),
-                c.getAgreedPrice(),
-                c.getStartDate(),
-                c.getEndDate(),
-                c.getCreatedAt()
+                b.getSubmittedAt(),
+                b.getContract() != null ? b.getContract().getId() : null  // safe null check
         );
     }
 }

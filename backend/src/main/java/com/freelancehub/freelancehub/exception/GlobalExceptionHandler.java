@@ -1,12 +1,13 @@
 package com.freelancehub.freelancehub.exception;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.nio.file.AccessDeniedException;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,7 +27,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(UnauthorizedException.class)
     public ResponseEntity<ErrorResponse> handleUnauthorized(UnauthorizedException ex) {
-        return ResponseEntity.status(403).body(new ErrorResponse(ex.getMessage()));
+        return ResponseEntity.status(401).body(new ErrorResponse(ex.getMessage()));
     }
 
     @ExceptionHandler(BadCredentialsException.class)
@@ -59,5 +60,10 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex) {
         return ResponseEntity.status(403).body(new ErrorResponse("Access denied"));
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleGlobalException(Exception ex) {
+        return ResponseEntity.status(500).body(new ErrorResponse("An unexpected server error occurred."));
     }
 }

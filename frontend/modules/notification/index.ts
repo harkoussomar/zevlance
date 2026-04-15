@@ -13,4 +13,4 @@ export type {
   NotificationType,
   NotificationsPage,
   UnreadCountResponse,
-} from './types';
+} from './types/notification';

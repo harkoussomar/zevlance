@@ -16,6 +16,7 @@ import com.freelancehub.freelancehub.user.domain.User;
 import com.freelancehub.freelancehub.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -44,17 +45,17 @@ public class AuthService {
 
     @Transactional
     public LoginResult registerFreelancer(RegisterFreelancerRequest request) {
-        if (userRepository.existsByEmail(request.email())) {
-            throw new ConflictException("Email already registered");
-        }
-
         Freelancer freelancer = new Freelancer();
         freelancer.setName(request.name());
         freelancer.setEmail(request.email());
         freelancer.setPassword(passwordEncoder.encode(request.password()));
         freelancer.setPhone(request.phone());
 
-        userRepository.save(freelancer);
+        try {
+            userRepository.saveAndFlush(freelancer);
+        } catch (DataIntegrityViolationException e) {
+            throw new ConflictException("Email already registered");
+        }
 
         sendVerificationEmail(freelancer.getEmail(), freelancer.getName());
 
@@ -68,10 +69,6 @@ public class AuthService {
 
     @Transactional
     public LoginResult registerClient(RegisterClientRequest request) {
-        if (userRepository.existsByEmail(request.email())) {
-            throw new ConflictException("Email already registered");
-        }
-
         Client client = new Client();
         client.setName(request.name());
         client.setEmail(request.email());
@@ -81,7 +78,11 @@ public class AuthService {
         client.setCompanyDescription(request.companyDescription());
         client.setWebsite(request.website());
 
-        userRepository.save(client);
+        try {
+            userRepository.saveAndFlush(client);
+        } catch (DataIntegrityViolationException e) {
+            throw new ConflictException("Email already registered");
+        }
 
         sendVerificationEmail(client.getEmail(), client.getName());
 
@@ -105,9 +106,8 @@ public class AuthService {
 
     @Transactional
     public void forgotPassword(String email) {
-        // Always return success to prevent email enumeration
         userRepository.findByEmail(email).ifPresent(user -> {
-            passwordResetTokenRepository.deleteByEmail(email); // invalidate old tokens
+            passwordResetTokenRepository.deleteByEmail(email);
             String token = UUID.randomUUID().toString();
             passwordResetTokenRepository.save(new PasswordResetToken(token, email));
 
@@ -134,10 +134,7 @@ public class AuthService {
                 .orElseThrow(() -> new NotFoundException("User not found"));
 
         user.setPassword(passwordEncoder.encode(newPassword));
-        userRepository.save(user);
-
         resetToken.setUsed(true);
-        passwordResetTokenRepository.save(resetToken);
     }
 
     @Transactional
@@ -154,10 +151,7 @@ public class AuthService {
                 .orElseThrow(() -> new NotFoundException("User not found"));
 
         user.setEmailVerified(true);
-        userRepository.save(user);
-
         vToken.setUsed(true);
-        emailVerificationTokenRepository.save(vToken);
     }
 
     @Transactional
@@ -182,7 +176,7 @@ public class AuthService {
     }
 
     private void sendVerificationEmail(String email, String name) {
-        emailVerificationTokenRepository.deleteByEmail(email); // invalidate old tokens
+        emailVerificationTokenRepository.deleteByEmail(email);
         String token = UUID.randomUUID().toString();
         emailVerificationTokenRepository.save(new EmailVerificationToken(token, email));
 

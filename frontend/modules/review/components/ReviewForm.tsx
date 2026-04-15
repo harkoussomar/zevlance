@@ -9,9 +9,9 @@ import { Button } from "@/modules/shared/components/button";
 import { Textarea } from "@/modules/shared/components/textarea";
 import { FormField } from "@/modules/shared/components/form-field";
 import { Alert } from "@/modules/shared/components/alert";
-import { Avatar } from "@/modules/shared/components/avatar";
+import { SmartAvatar } from "@/modules/shared/components/avatar";
 import { cn } from "@/modules/shared";
-import { LeaveReviewRequest, ReviewResponse } from "../types";
+import { LeaveReviewRequest, ReviewResponse } from "../types/review";
 
 // ─── Star Rating Input ─────────────────────────────────────────────────────────
 
@@ -149,7 +149,7 @@ export function ReviewForm({
         <div className="space-y-5">
             {/* Reviewee identity */}
             <div className="flex items-center gap-3">
-                <Avatar name={revieweeName} size="sm" />
+                <SmartAvatar name={revieweeName} size="sm" />
                 <div>
                     <p className="text-sm font-semibold text-foreground">
                         {revieweeName}

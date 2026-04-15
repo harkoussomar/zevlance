@@ -1,5 +1,6 @@
 package com.freelancehub.freelancehub.bid.domain;
 
+import com.freelancehub.freelancehub.contract.domain.Contract;
 import com.freelancehub.freelancehub.project.domain.Project;
 import com.freelancehub.freelancehub.user.domain.Freelancer;
 import jakarta.persistence.*;
@@ -7,6 +8,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UuidGenerator;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -26,7 +28,7 @@ public class Bid {
 
     @Id
     @Column(length = 36)
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @UuidGenerator
     private String id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -49,6 +51,9 @@ public class Bid {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private BidStatus status = BidStatus.PENDING;
+
+    @OneToOne(mappedBy = "bid", fetch = FetchType.LAZY)
+    private Contract contract;
 
     @CreationTimestamp
     @Column(updatable = false)

@@ -1,5 +1,7 @@
 package com.freelancehub.freelancehub.notification.domain;
 
+
+
 public enum NotificationType {
     // Bid
     BID_RECEIVED, BID_ACCEPTED, BID_REJECTED, BID_WITHDRAWN,

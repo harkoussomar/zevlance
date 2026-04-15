@@ -10,7 +10,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -22,6 +21,9 @@ public class AuthController {
 
     @Value("${app.cookie.secure:false}")
     private boolean cookieSecure;
+
+    @Value("${app.cookie.same-site:Lax}")
+    private String cookieSameSite;
 
     // ── Register ──────────────────────────────────────────────────────────────
 
@@ -100,23 +102,22 @@ public class AuthController {
 
     @PostMapping("/resend-verification")
     public ResponseEntity<Void> resendVerification(
-            @AuthenticationPrincipal UserDetails userDetails) {
-        authService.resendVerification(userDetails.getUsername());
+            @AuthenticationPrincipal User currentUser) {
+        authService.resendVerification(currentUser.getEmail());
         return ResponseEntity.noContent().build();
     }
 
     // ── Me ────────────────────────────────────────────────────────────────────
 
     @GetMapping("/me")
-    public ResponseEntity<AuthResponse> me(@AuthenticationPrincipal UserDetails userDetails) {
-        User user = (User) userDetails;
+    public ResponseEntity<AuthResponse> me(@AuthenticationPrincipal User currentUser) {
         return ResponseEntity.ok(
                 new AuthResponse(
-                        user.getEmail(),
-                        user.getRole().name(),
-                        user.getId(),
-                        user.getName(),
-                        user.isEmailVerified()
+                        currentUser.getEmail(),
+                        currentUser.getRole().name(),
+                        currentUser.getId(),
+                        currentUser.getName(),
+                        currentUser.isEmailVerified()
                 )
         );
     }
@@ -129,7 +130,7 @@ public class AuthController {
                 .secure(cookieSecure)
                 .path("/")
                 .maxAge(token.isEmpty() ? 0 : 24 * 60 * 60)
-                .sameSite("Lax")
+                .sameSite(cookieSameSite)
                 .build();
     }
 
@@ -139,7 +140,7 @@ public class AuthController {
                 .secure(cookieSecure)
                 .path("/")
                 .maxAge(active ? 24 * 60 * 60 : 0)
-                .sameSite("Lax")
+                .sameSite(cookieSameSite)
                 .build();
     }
 
@@ -149,7 +150,7 @@ public class AuthController {
                 .secure(cookieSecure)
                 .path("/")
                 .maxAge(role.isEmpty() ? 0 : 24 * 60 * 60)
-                .sameSite("Lax")
+                .sameSite(cookieSameSite)
                 .build();
     }
 
@@ -159,7 +160,7 @@ public class AuthController {
                 .secure(cookieSecure)
                 .path("/")
                 .maxAge(24 * 60 * 60)
-                .sameSite("Lax")
+                .sameSite(cookieSameSite)
                 .build();
     }
 }

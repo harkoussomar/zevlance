@@ -13,46 +13,76 @@ import {
     Briefcase,
     CheckCircle2,
     AlertCircle,
+    XCircle,
 } from "lucide-react";
 
-import { cn } from "@/modules/shared";
 import {
     ProjectStatusBadge,
     CategoryBadge,
 } from "@/modules/shared/components/status-badge";
-
 import { Card, CardContent } from "@/modules/shared/components/card";
 import { SkillTag } from "@/modules/shared/components/skil-tag";
 import { Button } from "@/modules/shared/components/button";
-import { Dialog } from "@/modules/shared/components/dialog";
 import { StatCard } from "@/modules/shared/components/stat-card";
 import { Alert } from "@/modules/shared/components/alert";
-import { Input } from "@/modules/shared/components/input";
+import { InputField } from "@/modules/shared/components/input";
 import { EmptyState } from "@/modules/shared/components/empty-state";
 import { Skeleton } from "@/modules/shared/components/skeleton";
 import {
-    ProjectStatus,
-    ProjectSummaryResponse,
-} from "@/modules/projects/types";
-import {
-    useCancelProject,
-    useMyProjects,
-} from "@/modules/projects/hooks/useProject";
+    FilterTabs,
+    type FilterTab,
+} from "@/modules/shared/components/FilterTabs";
+
 import {
     daysUntil,
     formatBudget,
     formatDate,
     formatRelative,
 } from "@/modules/shared";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/modules/shared/components/alert-dialog";
+import {
+    ProjectStatus,
+    ProjectSummaryResponse,
+} from "@/modules/project/shared/types/project.shared";
+import { useMyProjects } from "@/modules/project/client/hooks/useMyProjects";
+import { useCancelProject } from "@/modules/project/client/hooks/useCancelProject";
+import { PageHeader } from "@/modules/shared/components/PageHeader";
 
-// ─── Status filter tabs ───────────────────────────────────────────────────────
+// ─── Status filter tabs config ────────────────────────────────────────────────
 
-const STATUS_TABS: Array<{ value: ProjectStatus | "ALL"; label: string }> = [
-    { value: "ALL", label: "All" },
-    { value: "OPEN", label: "Open" },
-    { value: "IN_PROGRESS", label: "In Progress" },
-    { value: "COMPLETED", label: "Completed" },
-    { value: "CANCELLED", label: "Cancelled" },
+export type ProjectTabValue = ProjectStatus | "ALL";
+
+const PROJECT_TABS_CONFIG: FilterTab<ProjectTabValue>[] = [
+    { label: "All", value: "ALL", icon: <Briefcase className="w-3.5 h-3.5" /> },
+    {
+        label: "Open",
+        value: "OPEN",
+        icon: <AlertCircle className="w-3.5 h-3.5" />,
+    },
+    {
+        label: "In Progress",
+        value: "IN_PROGRESS",
+        icon: <Clock className="w-3.5 h-3.5" />,
+    },
+    {
+        label: "Completed",
+        value: "COMPLETED",
+        icon: <CheckCircle2 className="w-3.5 h-3.5" />,
+    },
+    {
+        label: "Cancelled",
+        value: "CANCELLED",
+        icon: <XCircle className="w-3.5 h-3.5" />,
+    },
 ];
 
 // ─── Loading skeleton ─────────────────────────────────────────────────────────
@@ -217,7 +247,7 @@ function ProjectRow({
                             )}
 
                             {project.status === "IN_PROGRESS" && (
-                                <Link href="/client/contracts">
+                                <Link href="/client/contracts/">
                                     <Button
                                         size="sm"
                                         variant="ghost"
@@ -233,32 +263,26 @@ function ProjectRow({
                 </CardContent>
             </Card>
 
-            <Dialog
-                open={showCancel}
-                onClose={() => setShowCancel(false)}
-                title="Cancel Project?"
-                description={`"${project.title}" will be marked as cancelled. This cannot be undone.`}
-                size="sm"
-            >
-                <div className="flex gap-3 mt-2">
-                    <Button
-                        variant="outline"
-                        className="flex-1"
-                        onClick={() => setShowCancel(false)}
-                    >
-                        Keep Project
-                    </Button>
-                    <Button
-                        className="flex-1 bg-destructive hover:bg-destructive/90 text-destructive-foreground"
-                        onClick={() => {
-                            onCancel(project.id);
-                            setShowCancel(false);
-                        }}
-                    >
-                        Cancel Project
-                    </Button>
-                </div>
-            </Dialog>
+            <AlertDialog open={showCancel} onOpenChange={setShowCancel}>
+                <AlertDialogContent size="sm">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Cancel Project?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            &quot;{project.title}&quot; will be marked as
+                            cancelled. This cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Keep Project</AlertDialogCancel>
+                        <AlertDialogAction
+                            variant="destructive"
+                            onClick={() => onCancel(project.id)}
+                        >
+                            Cancel Project
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </>
     );
 }
@@ -267,23 +291,29 @@ function ProjectRow({
 
 export default function MyProjectsPage() {
     const [search, setSearch] = useState("");
-    const [statusFilter, setStatusFilter] = useState<ProjectStatus | "ALL">(
-        "ALL",
-    );
+    const [statusFilter, setStatusFilter] = useState<ProjectTabValue>("ALL");
     const [cancelledId, setCancelledId] = useState<string | null>(null);
 
-    // Load a large page to enable full client-side search + status filtering.
-    // TODO: Move to server-side filtering if /projects/my grows to support more params.
     const { data, isLoading, error } = useMyProjects({ page: 0, size: 100 });
-    const cancelProject = useCancelProject();
 
-    const projects = data?.content ?? [];
+    const projects = useMemo(() => data?.content ?? [], [data?.content]);
+
+    const cancelProject = useCancelProject();
 
     const handleCancel = (id: string) => {
         cancelProject.mutate(id);
         setCancelledId(id);
         setTimeout(() => setCancelledId(null), 3000);
     };
+
+    // Calculate grouping stats for our filter and tabs
+    const open = projects.filter((p) => p.status === "OPEN").length;
+    const inProgress = projects.filter(
+        (p) => p.status === "IN_PROGRESS",
+    ).length;
+    const completed = projects.filter((p) => p.status === "COMPLETED").length;
+    const cancelled = projects.filter((p) => p.status === "CANCELLED").length;
+    const totalBids = projects.reduce((s, p) => s + p.bidCount, 0);
 
     const filtered = useMemo(
         () =>
@@ -300,14 +330,25 @@ export default function MyProjectsPage() {
         [projects, search, statusFilter],
     );
 
-    // Stats derived from the full loaded list
-    const open = projects.filter((p) => p.status === "OPEN").length;
-    const inProgress = projects.filter(
-        (p) => p.status === "IN_PROGRESS",
-    ).length;
-    const completed = projects.filter((p) => p.status === "COMPLETED").length;
-    const totalBids = projects.reduce((s, p) => s + p.bidCount, 0);
+    // 1. Merge static config with dynamic badge data natively inside a hook
+    const filterTabsData = useMemo(() => {
+        return PROJECT_TABS_CONFIG.map((tab) => {
+            let badgeCount: number | undefined;
 
+            if (tab.value === "ALL") badgeCount = projects.length;
+            else if (tab.value === "OPEN") badgeCount = open;
+            else if (tab.value === "IN_PROGRESS") badgeCount = inProgress;
+            else if (tab.value === "COMPLETED") badgeCount = completed;
+            else if (tab.value === "CANCELLED") badgeCount = cancelled;
+
+            return {
+                ...tab,
+                badge: badgeCount,
+            };
+        });
+    }, [projects.length, open, inProgress, completed, cancelled]);
+
+    // 2. Early return stays BELOW all hooks
     if (error) {
         return (
             <Alert variant="destructive">
@@ -319,27 +360,24 @@ export default function MyProjectsPage() {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex items-start justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold text-foreground">
-                        My Projects
-                    </h1>
-                    {isLoading ? (
-                        <Skeleton className="h-4 w-48 mt-1" />
+            <PageHeader
+                title="My Projects"
+                subtitle={
+                    isLoading ? (
+                        <Skeleton className="h-4 w-48" />
                     ) : (
-                        <p className="text-muted-foreground mt-1">
-                            {projects.length} total · {open} open · {inProgress}{" "}
-                            in progress
-                        </p>
-                    )}
-                </div>
-                <Link href="/client/projects/create">
-                    <Button size="sm">
-                        <PlusCircle className="w-3.5 h-3.5" />
-                        Post Project
-                    </Button>
-                </Link>
-            </div>
+                        `${projects.length} total · ${open} open · ${inProgress} in progress`
+                    )
+                }
+                action={
+                    <Link href="/client/projects/create">
+                        <Button variant="outline">
+                            <PlusCircle className="w-3.5 h-3.5" />
+                            Post Project
+                        </Button>
+                    </Link>
+                }
+            />
 
             {/* Stats */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -368,34 +406,29 @@ export default function MyProjectsPage() {
 
             {/* Cancellation feedback */}
             {cancelledId && (
-                <Alert variant="warning">Project cancelled successfully.</Alert>
+                <Alert variant="destructive">
+                    Project cancelled successfully.
+                </Alert>
             )}
 
             {/* Toolbar */}
-            <div className="flex gap-3 flex-wrap">
-                <Input
-                    placeholder="Search your projects…"
-                    startIcon={<Search className="w-4 h-4" />}
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="max-w-xs"
-                />
-                <div className="flex gap-1 border border-border rounded-lg p-1 bg-muted/30">
-                    {STATUS_TABS.map((tab) => (
-                        <button
-                            key={tab.value}
-                            onClick={() => setStatusFilter(tab.value)}
-                            className={cn(
-                                "px-3 py-1.5 rounded-md text-xs font-semibold transition-all duration-150",
-                                statusFilter === tab.value
-                                    ? "bg-background text-foreground shadow-sm"
-                                    : "text-muted-foreground hover:text-foreground",
-                            )}
-                        >
-                            {tab.label}
-                        </button>
-                    ))}
+            <div className="flex flex-col sm:flex-row gap-3">
+                <div className="w-full sm:flex-1">
+                    <InputField
+                        placeholder="Search your projects…"
+                        startIcon={<Search className="w-4 h-4" />}
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                    />
                 </div>
+
+                {/* 3. Render purely with your mapped state */}
+                <FilterTabs
+                    tabs={filterTabsData}
+                    value={statusFilter}
+                    onValueChange={setStatusFilter}
+                    className="shrink-0 sm:w-auto"
+                />
             </div>
 
             {/* List */}

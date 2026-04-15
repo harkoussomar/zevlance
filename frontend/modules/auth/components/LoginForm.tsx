@@ -9,7 +9,7 @@ import { useLogin } from "../hooks/useLogin";
 import { type LoginSchemaType, loginSchema } from "../schemas/login.schema";
 import { Alert } from "@/modules/shared/components/alert";
 import { FormField } from "@/modules/shared/components/form-field";
-import { Input } from "@/modules/shared/components/input";
+import { InputField } from "@/modules/shared/components/input";
 import { Button } from "@/modules/shared/components/button";
 
 export function LoginForm() {
@@ -34,7 +34,7 @@ export function LoginForm() {
             {serverError && <Alert variant="destructive">{serverError}</Alert>}
 
             <FormField label="Email address" required>
-                <Input
+                <InputField
                     type="email"
                     placeholder="you@example.com"
                     autoComplete="email"
@@ -44,7 +44,7 @@ export function LoginForm() {
             </FormField>
 
             <FormField label="Password" required>
-                <Input
+                <InputField
                     type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
                     autoComplete="current-password"
@@ -55,7 +55,9 @@ export function LoginForm() {
                             onClick={() => setShowPassword((s) => !s)}
                             className="text-muted-foreground hover:text-foreground transition-colors"
                             tabIndex={-1}
-                            aria-label={showPassword ? "Hide password" : "Show password"}
+                            aria-label={
+                                showPassword ? "Hide password" : "Show password"
+                            }
                         >
                             {showPassword ? (
                                 <EyeOff className="w-4 h-4" />

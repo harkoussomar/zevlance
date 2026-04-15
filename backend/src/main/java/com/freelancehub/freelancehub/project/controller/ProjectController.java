@@ -11,40 +11,41 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.math.BigDecimal;
+import java.net.URI;
 
 @RestController
-@RequestMapping("/api/v1/projects") // ✅ move /projects here
+@RequestMapping("/api/v1/projects")
 @RequiredArgsConstructor
 public class ProjectController {
 
     private final ProjectService projectService;
 
-    // GET /api/v1/projects?category=WEB_DEV&budgetMin=100&page=0&size=10
     @GetMapping
     public ResponseEntity<Page<ProjectSummaryResponse>> getProjects(
             @RequestParam(required = false) ProjectCategory category,
-            @RequestParam(required = false) ProjectStatus status,
             @RequestParam(required = false) BigDecimal budgetMin,
             @RequestParam(required = false) BigDecimal budgetMax,
             @RequestParam(required = false) String skill,
-            @PageableDefault(size = 10, sort = "createdAt") Pageable pageable
+            @RequestParam(required = false) String query,  // 👈
+            @PageableDefault(size = 10) Pageable pageable
     ) {
-        ProjectFilter filter = new ProjectFilter(category, status, budgetMin, budgetMax, skill);
+        ProjectFilter filter = new ProjectFilter(category, ProjectStatus.OPEN, budgetMin, budgetMax, skill, query);
         return ResponseEntity.ok(projectService.getProjects(filter, pageable));
     }
 
-    // GET /api/v1/projects/{id}
     @GetMapping("/{id}")
     public ResponseEntity<ProjectResponse> getProject(@PathVariable String id) {
         return ResponseEntity.ok(projectService.getProject(id));
     }
 
-    // GET /api/v1/projects/my — CLIENT only
     @GetMapping("/my")
+    @PreAuthorize("hasRole('CLIENT')")
     public ResponseEntity<Page<ProjectSummaryResponse>> getMyProjects(
             @AuthenticationPrincipal User currentUser,
             @PageableDefault(size = 10) Pageable pageable
@@ -52,18 +53,24 @@ public class ProjectController {
         return ResponseEntity.ok(projectService.getMyProjects(currentUser.getId(), pageable));
     }
 
-    // POST /api/v1/projects — CLIENT only
     @PostMapping
+    @PreAuthorize("hasRole('CLIENT')")
     public ResponseEntity<ProjectResponse> createProject(
             @Valid @RequestBody CreateProjectRequest request,
             @AuthenticationPrincipal User currentUser
     ) {
-        return ResponseEntity.status(201)
-                .body(projectService.createProject(request, currentUser.getId()));
+        ProjectResponse response = projectService.createProject(request, currentUser.getId());
+
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(response.id())
+                .toUri();
+
+        return ResponseEntity.created(location).body(response);
     }
 
-    // PUT /api/v1/projects/{id} — CLIENT owner only
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('CLIENT')")
     public ResponseEntity<ProjectResponse> updateProject(
             @PathVariable String id,
             @Valid @RequestBody UpdateProjectRequest request,
@@ -72,8 +79,9 @@ public class ProjectController {
         return ResponseEntity.ok(projectService.updateProject(id, request, currentUser.getId()));
     }
 
-    // DELETE /api/v1/projects/{id} — CLIENT owner only (sets status CANCELLED)
-    @DeleteMapping("/{id}")
+    // CHANGED from DELETE /{id} to PUT /{id}/cancel to match REST state-transition semantics
+    @PutMapping("/{id}/cancel")
+    @PreAuthorize("hasRole('CLIENT')")
     public ResponseEntity<Void> cancelProject(
             @PathVariable String id,
             @AuthenticationPrincipal User currentUser

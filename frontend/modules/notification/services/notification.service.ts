@@ -1,18 +1,25 @@
-import api from '@/modules/shared/lib/axios';
-import type { NotificationsPage, UnreadCountResponse } from '../types';
+import api from "@/modules/shared/lib/axios";
+import type { NotificationsPage, UnreadCountResponse } from "../types/notification";
 
 export const notificationService = {
-  getNotifications: (page = 0, size = 20) =>
-    api.get<NotificationsPage>('/notifications', { params: { page, size } })
-      .then(r => r.data),
+  async getNotifications(page = 0, size = 20, signal?: AbortSignal): Promise<NotificationsPage> {
+    const { data } = await api.get<NotificationsPage>("/notifications", {
+      params: { page, size },
+      signal,
+    });
+    return data;
+  },
 
-  getUnreadCount: () =>
-    api.get<UnreadCountResponse>('/notifications/unread-count')
-      .then(r => r.data),
+  async getUnreadCount(signal?: AbortSignal): Promise<UnreadCountResponse> {
+    const { data } = await api.get<UnreadCountResponse>("/notifications/unread-count", { signal });
+    return data;
+  },
 
-  markAsRead: (id: string) =>
-    api.patch(`/notifications/${id}/read`),
+  async markAsRead(id: string, signal?: AbortSignal): Promise<void> {
+    await api.patch(`/notifications/${id}/read`, undefined, { signal });
+  },
 
-  markAllAsRead: () =>
-    api.patch('/notifications/read-all'),
-};
+  async markAllAsRead(signal?: AbortSignal): Promise<void> {
+    await api.patch("/notifications/read-all", undefined, { signal });
+  },
+} as const;

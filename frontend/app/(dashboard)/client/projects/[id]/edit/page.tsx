@@ -7,10 +7,11 @@ import { ArrowLeft, AlertCircle } from "lucide-react";
 
 import { SkeletonCard } from "@/modules/shared/components/skeleton";
 import { Alert } from "@/modules/shared/components/alert";
-import { useProject } from "@/modules/projects/hooks/useProject";
-import { ProjectFormValues } from "@/modules/projects/schema/create.project.schema";
-import { ProjectCategory } from "@/modules/projects/types";
-import { ProjectForm } from "@/modules/projects/components/ClientProjectForm";
+import { useProject } from "@/modules/project/public/hooks/useProject";
+import { ProjectFormValues } from "@/modules/project/client/schema/create.project.schema";
+import { ProjectCategory } from "@/modules/project/shared/types/project.shared";
+import { ProjectForm } from "@/modules/project/client";
+
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -53,7 +54,7 @@ export default function EditProjectPage() {
                     <ArrowLeft className="w-4 h-4" />
                     My Projects
                 </Link>
-                <Alert variant="warning">
+                <Alert>
                     <AlertCircle className="w-4 h-4" />
                     Only <strong>OPEN</strong> projects can be edited. This
                     project is <strong>{project.status}</strong>.

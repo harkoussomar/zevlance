@@ -17,22 +17,42 @@ public interface ProjectRepository extends JpaRepository<Project, String> {
     // Client's own projects
     Page<Project> findByClientId(String clientId, Pageable pageable);
 
-    // Filtered listing — all params optional
-    @Query("""
-        SELECT DISTINCT p FROM Project p
+    @Query(value = """
+    SELECT * FROM (
+        SELECT DISTINCT p.*
+        FROM projects p
+        LEFT JOIN project_skills ps ON ps.project_id = p.id
         WHERE (:category IS NULL OR p.category = :category)
           AND (:status IS NULL OR p.status = :status)
-          AND (:budgetMin IS NULL OR p.budgetMax >= :budgetMin)
-          AND (:budgetMax IS NULL OR p.budgetMin <= :budgetMax)
-          AND (:skill IS NULL OR :skill MEMBER OF p.requiredSkills)
-        ORDER BY p.createdAt DESC
-        """)
+          AND (:budgetMin IS NULL OR p.budget_max >= :budgetMin)
+          AND (:budgetMax IS NULL OR p.budget_min <= :budgetMax)
+          AND (:skill IS NULL OR ps.skill = :skill)
+          AND (:query IS NULL OR p.search_vector @@ plainto_tsquery('english', :query))
+    ) p
+    ORDER BY
+        CASE WHEN :query IS NULL THEN 0
+             ELSE ts_rank(p.search_vector, plainto_tsquery('english', :query))
+        END DESC,
+        p.created_at DESC
+    """,
+            countQuery = """
+    SELECT COUNT(DISTINCT p.id) FROM projects p
+    LEFT JOIN project_skills ps ON ps.project_id = p.id
+    WHERE (:category IS NULL OR p.category = :category)
+      AND (:status IS NULL OR p.status = :status)
+      AND (:budgetMin IS NULL OR p.budget_max >= :budgetMin)
+      AND (:budgetMax IS NULL OR p.budget_min <= :budgetMax)
+      AND (:skill IS NULL OR ps.skill = :skill)
+      AND (:query IS NULL OR p.search_vector @@ plainto_tsquery('english', :query))
+    """,
+            nativeQuery = true)
     Page<Project> findWithFilters(
-            @Param("category") ProjectCategory category,
-            @Param("status") ProjectStatus status,
+            @Param("category") String category,
+            @Param("status") String status,
             @Param("budgetMin") BigDecimal budgetMin,
             @Param("budgetMax") BigDecimal budgetMax,
             @Param("skill") String skill,
+            @Param("query") String query,
             Pageable pageable
     );
 
