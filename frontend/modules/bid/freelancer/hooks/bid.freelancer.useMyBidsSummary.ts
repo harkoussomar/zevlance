@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getMyBidsSummary } from "../services/bid.freelancer.service";
+import { getMyBidsSummary } from "../api/bid.freelancer.api";
 import { bidKeys } from "../../shared";
 import type { BidSummaryResponse } from "../../shared";
 

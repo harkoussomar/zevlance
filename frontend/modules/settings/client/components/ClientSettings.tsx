@@ -43,7 +43,7 @@ export function ClientSettings() {
     }
 
     return (
-        <div className="flex gap-8">
+        <div className="flex flex-col lg:flex-row gap-8">
             <SettingsSidebar
                 items={CLIENT_NAV}
                 active={section}

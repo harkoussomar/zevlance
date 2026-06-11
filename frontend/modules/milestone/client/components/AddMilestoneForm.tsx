@@ -1,7 +1,7 @@
 "use client";
 
 import { useForm, useWatch, Controller } from "react-hook-form";
-import { Plus, DollarSign, X, Zap, CalendarDays } from "lucide-react";
+import { Plus, DollarSign, X, Zap } from "lucide-react";
 
 import { Button } from "@/modules/shared/components/button";
 import { InputField } from "@/modules/shared/components/input";
@@ -120,7 +120,7 @@ export function AddMilestoneForm({
                             <InputField
                                 {...register("amount", { valueAsNumber: true })}
                                 type="number"
-                                min={0}
+                                min={5}
                                 step="0.01"
                                 placeholder="400"
                                 startIcon={

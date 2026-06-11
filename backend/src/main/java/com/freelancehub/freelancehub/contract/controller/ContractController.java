@@ -5,6 +5,7 @@ import com.freelancehub.freelancehub.contract.dto.ContractResponse;
 import com.freelancehub.freelancehub.contract.dto.ContractSummaryResponse;
 import com.freelancehub.freelancehub.contract.service.ContractService;
 import com.freelancehub.freelancehub.user.domain.User;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -69,12 +70,14 @@ public class ContractController {
         return ResponseEntity.ok(contractService.cancelContract(id, currentUser.getId()));
     }
 
-    // ─── PUT /api/v1/contracts/{id}/dispute — both parties ───────────────────
+// ─── PUT /api/v1/contracts/{id}/dispute — both parties ───────────────────
     @PutMapping("/{id}/dispute")
     public ResponseEntity<ContractResponse> disputeContract(
             @PathVariable String id,
+            @Valid @RequestBody com.freelancehub.freelancehub.dispute.dto.OpenDisputeRequest request, // ✅ ADDED THIS
             @AuthenticationPrincipal User currentUser
     ) {
-        return ResponseEntity.ok(contractService.disputeContract(id, currentUser.getId()));
+        // ✅ PASS THE REQUEST TO THE SERVICE
+        return ResponseEntity.ok(contractService.disputeContract(id, currentUser.getId(), request));
     }
 }

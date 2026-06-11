@@ -30,7 +30,6 @@ import {
     ClientStatusIcon,
 } from "../config/milestone.client.status";
 
-// Hooks imported directly into the card
 import {
     useFundMilestone,
     useRefundMilestone,
@@ -59,7 +58,6 @@ const CLOSED_DIALOG: ConfirmDialogState = {
     action: () => {},
 };
 
-// Look how clean these props are now!
 interface ClientMilestoneCardProps {
     contractId: string;
     milestone: MilestoneResponse;
@@ -84,7 +82,7 @@ export function ClientMilestoneCard({
         useRequestRevision(contractId);
 
     const { mutate: fund, isPending: isFunding } = useFundMilestone(contractId);
-    
+
     const { mutate: refund, isPending: isRefunding } =
         useRefundMilestone(contractId);
 
@@ -97,8 +95,7 @@ export function ClientMilestoneCard({
         setConfirmDialog({ open: true, ...dialog });
     const closeDialog = () => setConfirmDialog(CLOSED_DIALOG);
 
-    // ─── Handlers (With built-in error catching) ───────────────────────────────
-
+    // ─── Handlers ─────────────────────────────────────────────────────────────
     const handleApprove = () => {
         approve(milestone.id, {
             onSuccess: () => toast.success("Milestone approved!"),
@@ -109,9 +106,7 @@ export function ClientMilestoneCard({
     const handleRevision = () => {
         requestRevision(milestone.id, {
             onSuccess: () =>
-                toast.info(
-                    "Revision requested. The freelancer will be notified.",
-                ),
+                toast.info("Revision requested. The freelancer will be notified."),
             onError: (err) => toast.error(parseApiError(err)),
         });
     };
@@ -125,19 +120,15 @@ export function ClientMilestoneCard({
             action: (e) => {
                 e?.preventDefault();
                 fund(milestone.id, {
-                    onSuccess: () => closeDialog(), // Assuming stripe redirect
+                    onSuccess: () => closeDialog(),
                     onError: (err) => {
                         const status = (
                             err as { response?: { status?: number } }
                         )?.response?.status;
                         if (status === 422)
-                            toast.error(
-                                "The freelancer hasn't connected their Stripe account yet.",
-                            );
+                            toast.error("The freelancer hasn't connected their Stripe account yet.");
                         else if (status === 409)
-                            toast.error(
-                                "This milestone cannot be funded in its current state.",
-                            );
+                            toast.error("This milestone cannot be funded in its current state.");
                         else toast.error(parseApiError(err));
                         closeDialog();
                     },
@@ -173,16 +164,16 @@ export function ClientMilestoneCard({
         <>
             <div
                 className={cn(
-                    "rounded-xl border p-5 transition-all duration-200",
+                    "rounded-xl border p-4 sm:p-5 transition-all duration-200",
                     styles.card,
                 )}
             >
                 {/* Header */}
-                <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-3 min-w-0">
+                <div className="flex items-start justify-between gap-3 sm:gap-4">
+                    <div className="flex items-start gap-3 min-w-0 flex-1">
                         <div
                             className={cn(
-                                "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 border-2 transition-all",
+                                "w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 border-2 transition-all",
                                 styles.dot,
                                 milestone.status === "APPROVED"
                                     ? ""
@@ -190,7 +181,7 @@ export function ClientMilestoneCard({
                             )}
                         >
                             {milestone.status === "APPROVED" ? (
-                                <CheckCircle2 className="w-4 h-4" />
+                                <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                             ) : (
                                 index + 1
                             )}
@@ -201,9 +192,7 @@ export function ClientMilestoneCard({
                                 <p className="font-semibold text-foreground text-sm leading-snug">
                                     {milestone.title}
                                 </p>
-                                <MilestoneStatusBadge
-                                    status={milestone.status}
-                                />
+                                <MilestoneStatusBadge status={milestone.status} />
                             </div>
 
                             {milestone.description && (
@@ -212,21 +201,26 @@ export function ClientMilestoneCard({
                                 </p>
                             )}
 
-                            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                            {/* Meta row — wraps gracefully on xs */}
+                            <div className="flex items-center flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
                                 <span className="flex items-center gap-1">
-                                    <DollarSign className="w-3 h-3" />
+                                    <DollarSign className="w-3 h-3 shrink-0" />
                                     <span className="font-semibold text-foreground">
                                         {formatCurrency(milestone.amount)}
                                     </span>
                                 </span>
                                 <span className="flex items-center gap-1">
-                                    <Calendar className="w-3 h-3" />
+                                    <Calendar className="w-3 h-3 shrink-0" />
                                     Due {formatDate(milestone.dueDate)}
                                 </span>
                             </div>
                         </div>
                     </div>
-                    <ClientStatusIcon status={milestone.status} />
+
+                    {/* Status icon — shrink-safe */}
+                    <div className="shrink-0">
+                        <ClientStatusIcon status={milestone.status} />
+                    </div>
                 </div>
 
                 {/* Deliverable Link */}
@@ -246,7 +240,7 @@ export function ClientMilestoneCard({
                     </div>
                 )}
 
-                {/* Actions strictly hide if contract is no longer ACTIVE */}
+                {/* Actions */}
                 {isActive && (
                     <>
                         {/* PENDING -> Fund */}
@@ -260,7 +254,7 @@ export function ClientMilestoneCard({
                                     onClick={handleFund}
                                     className="w-full shadow-sm"
                                 >
-                                    <CreditCard className="w-3.5 h-3.5 mr-2" />{" "}
+                                    <CreditCard className="w-3.5 h-3.5 mr-2 shrink-0" />
                                     Fund {formatCurrency(milestone.amount)}
                                 </Button>
                             </div>
@@ -270,10 +264,14 @@ export function ClientMilestoneCard({
                         {milestone.status === "FUNDED" && (
                             <div className="mt-3 pt-3 border-t border-primary/20 space-y-3">
                                 <p className="text-xs text-primary flex items-center gap-1.5">
-                                    <BadgeCheck className="w-3 h-3" /> Escrow
-                                    funded
+                                    <BadgeCheck className="w-3 h-3 shrink-0" /> Escrow funded
                                 </p>
-                                {!milestone.deliverableUrl && (
+                                {milestone.refundStatus === "PENDING" && (
+                                    <p className="text-xs text-muted-foreground">
+                                        Refund initiated and awaiting confirmation from the payment provider.
+                                    </p>
+                                )}
+                                {!milestone.deliverableUrl && milestone.refundStatus === "NONE" && (
                                     <Button
                                         variant="ghost"
                                         size="sm"
@@ -282,9 +280,8 @@ export function ClientMilestoneCard({
                                         onClick={handleRefund}
                                         className="text-destructive hover:bg-destructive/5 w-full"
                                     >
-                                        <RefreshCcw className="w-3.5 h-3.5 mr-2" />{" "}
-                                        Refund{" "}
-                                        {formatCurrency(milestone.amount)}
+                                        <RefreshCcw className="w-3.5 h-3.5 mr-2 shrink-0" />
+                                        Refund {formatCurrency(milestone.amount)}
                                     </Button>
                                 )}
                             </div>
@@ -292,43 +289,56 @@ export function ClientMilestoneCard({
 
                         {/* SUBMITTED -> Approve / Revise */}
                         {milestone.status === "SUBMITTED" && (
-                            <div className="flex gap-2.5 mt-4 pt-4 border-t border-border/60">
-                                <Button
-                                    variant="success"
-                                    size="sm"
-                                    disabled={isActing}
-                                    loading={isApproving}
-                                    onClick={handleApprove}
-                                    className="flex-1 shadow-sm"
-                                >
-                                    <ThumbsUp className="w-3.5 h-3.5 mr-2" />{" "}
-                                    Approve & Release
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    disabled={
-                                        isActing || milestone.revisionCount >= 3
-                                    }
-                                    loading={isRequestingRevision}
-                                    onClick={handleRevision}
-                                    className="flex-1 text-warning border-warning/30 hover:bg-warning/8"
-                                >
-                                    <RotateCcw className="w-3.5 h-3.5 mr-2" />
-                                    {milestone.revisionCount > 0
-                                        ? `Revision (${milestone.revisionCount}/3)`
-                                        : "Request Revision"}
-                                </Button>
+                            <div className="flex flex-col gap-2.5 mt-4 pt-4 border-t border-border/60">
+                                {milestone.revisionCount >= 3 && (
+                                    <p className="text-xs text-warning bg-warning/10 p-2 rounded-md">
+                                        Maximum revisions (3/3) reached. You
+                                        must now Approve the work or Open a
+                                        Dispute.
+                                    </p>
+                                )}
+
+                                {/* Stack on mobile, side-by-side from sm up */}
+                                <div className="flex flex-col sm:flex-row gap-2 sm:gap-2.5">
+                                    <Button
+                                        variant="success"
+                                        size="sm"
+                                        disabled={isActing}
+                                        loading={isApproving}
+                                        onClick={handleApprove}
+                                        className="flex-1 shadow-sm"
+                                    >
+                                        <ThumbsUp className="w-3.5 h-3.5 mr-2 shrink-0" />
+                                        Approve & Release
+                                    </Button>
+
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        disabled={
+                                            isActing ||
+                                            milestone.revisionCount >= 3
+                                        }
+                                        loading={isRequestingRevision}
+                                        onClick={handleRevision}
+                                        className="flex-1 text-warning border-warning/30 hover:bg-warning/8"
+                                    >
+                                        <RotateCcw className="w-3.5 h-3.5 mr-2 shrink-0" />
+                                        {milestone.revisionCount > 0
+                                            ? `Revision (${milestone.revisionCount}/3)`
+                                            : "Request Revision"}
+                                    </Button>
+                                </div>
                             </div>
                         )}
                     </>
                 )}
 
-                {/* Terminal States (Approved, Disputed, Refunded) */}
+                {/* Terminal States */}
                 {milestone.status === "APPROVED" && milestone.releasedAt && (
                     <div className="mt-3 pt-3 border-t border-success/20">
                         <p className="text-xs text-success flex items-center gap-1.5">
-                            <CheckCircle2 className="w-3 h-3" /> Payment
+                            <CheckCircle2 className="w-3 h-3 shrink-0" /> Payment
                             released on {formatDate(milestone.releasedAt)}
                         </p>
                     </div>
@@ -336,21 +346,19 @@ export function ClientMilestoneCard({
                 {milestone.status === "DISPUTED" && (
                     <div className="mt-3 pt-3 border-t border-destructive/20">
                         <p className="text-xs text-destructive flex items-center gap-1.5">
-                            <ShieldAlert className="w-3 h-3" /> Under dispute.
-                            Funds frozen.
+                            <ShieldAlert className="w-3 h-3 shrink-0" /> Under dispute. Funds frozen.
                         </p>
                     </div>
                 )}
                 {milestone.status === "REFUNDED" && (
                     <div className="mt-3 pt-3 border-t border-border/60">
                         <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                            <Undo2 className="w-3 h-3" /> Payment refunded.
+                            <Undo2 className="w-3 h-3 shrink-0" /> Payment refunded.
                         </p>
                     </div>
                 )}
             </div>
 
-            {/* Localized Dialog ensures it only blocks interaction for THIS specific card */}
             <ConfirmDialog
                 open={confirmDialog.open}
                 variant={confirmDialog.variant}

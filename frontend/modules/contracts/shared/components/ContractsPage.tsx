@@ -94,7 +94,7 @@ function ContractsStats() {
 
     if (isPending) {
         return (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {Array.from({ length: 4 }).map((_, i) => (
                     // Renders 4 nice blank skeleton boxes
                     <Skeleton key={i} className="h-28 w-full rounded-xl" />
@@ -118,7 +118,7 @@ function ContractsStats() {
     }
 
     return (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard
                 label="Active Contracts"
                 value={summary?.activeCount ?? 0}

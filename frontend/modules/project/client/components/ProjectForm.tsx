@@ -1,13 +1,11 @@
-// features/projects/components/ProjectForm.tsx
 "use client";
 
 import { useState } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, useWatch } from "react-hook-form";
 import {
     Briefcase,
     DollarSign,
     Tag,
-    Calendar,
     Eye,
     PlusCircle,
     CheckCircle2,
@@ -18,6 +16,7 @@ import {
 
 import {
     projectSchema,
+    type ProjectFormInput,
     type ProjectFormValues,
 } from "../schema/create.project.schema";
 import { cn } from "@/modules/shared";
@@ -26,7 +25,14 @@ import { Card, CardContent } from "@/modules/shared/components/card";
 import { FormField } from "@/modules/shared/components/form-field";
 import { Input, InputField } from "@/modules/shared/components/input";
 import { Textarea } from "@/modules/shared/components/textarea";
-import { Select } from "@/modules/shared/components/select";
+// UPDATED: Destructured Select imports
+import {
+    Select,
+    SelectTrigger,
+    SelectValue,
+    SelectContent,
+    SelectItem,
+} from "@/modules/shared/components/select";
 import { Button } from "@/modules/shared/components/button";
 import { Alert } from "@/modules/shared/components/alert";
 import { DatePicker } from "@/modules/shared/components/date-picker";
@@ -51,10 +57,6 @@ interface Step {
     fields: (keyof ProjectFormValues)[];
 }
 
-// ─── Step accent colors use semantic tokens:
-//   Step 1 → primary  (project basics)
-//   Step 2 → success  (budget — green = money)
-//   Step 3 → role-admin (skills — closest purple-hue in the token system)
 const STEPS: Step[] = [
     {
         number: 1,
@@ -108,7 +110,6 @@ function StepProgress({
                         <div
                             className={cn(
                                 "w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-all duration-200",
-                                // success token replaces hardcoded emerald for filled state
                                 filled
                                     ? "bg-success/10 text-success"
                                     : step.color,
@@ -132,7 +133,6 @@ function StepProgress({
                                 {step.label}
                             </p>
                         </div>
-                        {/* success token replaces hardcoded bg-emerald-500 */}
                         {filled && (
                             <div className="w-1.5 h-1.5 rounded-full bg-success shrink-0" />
                         )}
@@ -166,7 +166,6 @@ function LivePreview({ values }: { values: Partial<ProjectFormValues> }) {
                 )}
             >
                 <CardContent className="p-4 space-y-3">
-                    {/* Badges */}
                     <div className="flex items-center gap-2 flex-wrap">
                         {values.category ? (
                             <CategoryBadge category={values.category} />
@@ -178,7 +177,6 @@ function LivePreview({ values }: { values: Partial<ProjectFormValues> }) {
                         <ProjectStatusBadge status="OPEN" />
                     </div>
 
-                    {/* Title */}
                     <p
                         className={cn(
                             "text-sm font-bold leading-snug line-clamp-2",
@@ -188,14 +186,12 @@ function LivePreview({ values }: { values: Partial<ProjectFormValues> }) {
                         {values.title || "Your project title will appear here…"}
                     </p>
 
-                    {/* Description snippet */}
                     {values.description && (
                         <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
                             {values.description}
                         </p>
                     )}
 
-                    {/* Meta row */}
                     <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                         <span className="flex items-center gap-1">
                             <GitBranch className="w-3 h-3" />
@@ -227,7 +223,6 @@ function LivePreview({ values }: { values: Partial<ProjectFormValues> }) {
                         )}
                     </div>
 
-                    {/* Skills */}
                     {values.requiredSkills &&
                     values.requiredSkills.length > 0 ? (
                         <div className="flex gap-1.5 flex-wrap">
@@ -253,7 +248,6 @@ function LivePreview({ values }: { values: Partial<ProjectFormValues> }) {
                         </div>
                     )}
 
-                    {/* Budget bar */}
                     {values.budgetMin &&
                         values.budgetMax &&
                         Number(values.budgetMax) >=
@@ -326,7 +320,6 @@ export function ProjectForm({
     onSuccess,
 }: ProjectFormProps) {
     const [skillInput, setSkillInput] = useState("");
-    const [submitted, setSubmitted] = useState(false);
 
     const createProject = useCreateProject();
     const updateProject = useUpdateProject(projectId ?? "");
@@ -337,10 +330,9 @@ export function ProjectForm({
         register,
         handleSubmit,
         setValue,
-        watch,
         control,
         formState: { errors, isSubmitting },
-    } = useForm<ProjectFormValues>({
+    } = useForm<ProjectFormInput, unknown, ProjectFormValues>({
         resolver: standardSchemaResolver(projectSchema),
         defaultValues: {
             requiredSkills: [],
@@ -348,7 +340,7 @@ export function ProjectForm({
         },
     });
 
-    const watchedValues = watch();
+    const watchedValues = useWatch({ control });
     const skills = watchedValues.requiredSkills ?? [];
 
     const addSkill = () => {
@@ -371,7 +363,6 @@ export function ProjectForm({
 
     const onSubmit = async (values: ProjectFormValues) => {
         await mutation.mutateAsync(values as never);
-        setSubmitted(true);
         onSuccess?.();
     };
 
@@ -390,7 +381,6 @@ export function ProjectForm({
             className="space-y-0"
         >
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                {/* ── Left: Form sections ───────────────────────────────────────── */}
                 <div className="lg:col-span-7 space-y-5">
                     {serverError && (
                         <Alert variant="destructive">
@@ -399,7 +389,6 @@ export function ProjectForm({
                         </Alert>
                     )}
 
-                    {/* Section 1: Basics */}
                     <Card>
                         <CardContent className="p-6 space-y-5">
                             <div className="flex items-center gap-2.5">
@@ -433,19 +422,27 @@ export function ProjectForm({
                                 required
                                 error={errors.category?.message}
                             >
+                                {/* UPDATED SELECT USAGE */}
                                 <Select
-                                    value={watchedValues.category ?? ""}
-                                    onChange={(e) =>
-                                        setValue(
-                                            "category",
-                                            e.target.value as ProjectCategory,
-                                            { shouldValidate: true },
-                                        )
+                                    value={watchedValues.category || undefined} // Radix needs undefined for empty placeholder
+                                    onValueChange={(val) =>
+                                        setValue("category", val as ProjectCategory, {
+                                            shouldValidate: true,
+                                        })
                                     }
-                                    placeholder="Select a category"
-                                    options={CATEGORY_OPTIONS}
-                                    error={errors.category?.message}
-                                />
+                                >
+                                    {/* The error class passes directly via aria-invalid */}
+                                    <SelectTrigger aria-invalid={!!errors.category?.message}>
+                                        <SelectValue placeholder="Select a category" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {CATEGORY_OPTIONS.map((option) => (
+                                            <SelectItem key={option.value} value={option.value}>
+                                                {option.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </FormField>
 
                             <FormField
@@ -464,7 +461,6 @@ export function ProjectForm({
                         </CardContent>
                     </Card>
 
-                    {/* Section 2: Budget — success token replaces hardcoded emerald */}
                     <Card>
                         <CardContent className="p-6 space-y-5">
                             <div className="flex items-center gap-2.5">
@@ -476,7 +472,7 @@ export function ProjectForm({
                                 </h2>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <FormField
                                     label="Minimum (USD)"
                                     required
@@ -492,7 +488,9 @@ export function ProjectForm({
                                                 $
                                             </span>
                                         }
-                                        {...register("budgetMin")}
+                                        {...register("budgetMin", {
+                                            valueAsNumber: true,
+                                        })}
                                     />
                                 </FormField>
 
@@ -511,12 +509,13 @@ export function ProjectForm({
                                                 $
                                             </span>
                                         }
-                                        {...register("budgetMax")}
+                                        {...register("budgetMax", {
+                                            valueAsNumber: true,
+                                        })}
                                     />
                                 </FormField>
                             </div>
 
-                            {/* Budget range visual — success tokens replace hardcoded emerald */}
                             {watchedValues.budgetMin &&
                                 watchedValues.budgetMax &&
                                 Number(watchedValues.budgetMax) >=
@@ -544,7 +543,6 @@ export function ProjectForm({
                         </CardContent>
                     </Card>
 
-                    {/* Section 3: Skills + Deadline — role-admin token replaces hardcoded purple */}
                     <Card>
                         <CardContent className="p-6 space-y-5">
                             <div className="flex items-center gap-2.5">
@@ -556,7 +554,6 @@ export function ProjectForm({
                                 </h2>
                             </div>
 
-                            {/* Skills input */}
                             <div className="space-y-2">
                                 <label className="text-sm font-semibold text-foreground">
                                     Required Skills
@@ -609,7 +606,6 @@ export function ProjectForm({
                                 </p>
                             </div>
 
-                            {/* Deadline */}
                             <FormField
                                 label="Deadline"
                                 required
@@ -631,7 +627,6 @@ export function ProjectForm({
                         </CardContent>
                     </Card>
 
-                    {/* Submit */}
                     <div className="flex gap-3 pb-8">
                         <Button
                             type="submit"
@@ -661,10 +656,8 @@ export function ProjectForm({
                     </div>
                 </div>
 
-                {/* ── Right: Sticky sidebar ─────────────────────────────────────── */}
                 <div className="hidden lg:block lg:col-span-5">
                     <div className="sticky top-24 space-y-6">
-                        {/* Progress tracker */}
                         <Card>
                             <CardContent className="p-4">
                                 <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 px-1">
@@ -677,7 +670,6 @@ export function ProjectForm({
                             </CardContent>
                         </Card>
 
-                        {/* Live preview */}
                         <LivePreview values={watchedValues} />
                     </div>
                 </div>

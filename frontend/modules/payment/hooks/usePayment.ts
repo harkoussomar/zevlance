@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-import * as paymentApi from "../services/payment.service";
+import * as paymentApi from "../api/payment.api";
 import { isSafeStripeUrl } from "../utils/stripe-url";
 import { stripeKeys } from "../utils/stripe-keys";
 import { milestoneKeys } from "@/modules/milestone/shared";

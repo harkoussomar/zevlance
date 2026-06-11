@@ -6,6 +6,7 @@ import com.stripe.exception.SignatureVerificationException;
 import com.stripe.model.Account;
 import com.stripe.model.Event;
 import com.stripe.model.EventDataObjectDeserializer;
+import com.stripe.model.Refund;
 import com.stripe.model.checkout.Session;
 import com.stripe.net.Webhook;
 import lombok.RequiredArgsConstructor;
@@ -71,17 +72,41 @@ public class StripeWebhookController {
                     Session session = deserialize(event, Session.class);
                     paymentService.handleCheckoutCompleted(
                             session.getId(),
-                            session.getPaymentIntent()
+                            session.getPaymentIntent(),
+                            session.getPaymentStatus(),
+                            session.getAmountTotal(),
+                            session.getCurrency()
                     );
+                }
+
+                case "checkout.session.async_payment_succeeded" -> {
+                    Session session = deserialize(event, Session.class);
+                    paymentService.handleCheckoutCompleted(
+                            session.getId(),
+                            session.getPaymentIntent(),
+                            "paid",
+                            session.getAmountTotal(),
+                            session.getCurrency()
+                    );
+                }
+
+                case "checkout.session.expired", "checkout.session.async_payment_failed" -> {
+                    Session session = deserialize(event, Session.class);
+                    paymentService.handleCheckoutExpired(session.getId());
+                }
+
+                case "refund.created", "refund.updated", "refund.failed" -> {
+                    Refund refund = deserialize(event, Refund.class);
+                    paymentService.handleRefundUpdated(refund.getId(), refund.getStatus());
                 }
 
                 case "account.updated" -> {
                     Account account = deserialize(event, Account.class);
-                    // Only mark onboarded when both charges AND payouts are enabled
-                    if (Boolean.TRUE.equals(account.getChargesEnabled())
-                            && Boolean.TRUE.equals(account.getPayoutsEnabled())) {
-                        stripeConnectService.markOnboarded(account.getId());
-                    }
+                    stripeConnectService.updateOnboardingStatus(
+                            account.getId(),
+                            Boolean.TRUE.equals(account.getChargesEnabled())
+                                    && Boolean.TRUE.equals(account.getPayoutsEnabled())
+                    );
                 }
 
                 default -> log.debug("Unhandled Stripe event type: {}", event.getType());
@@ -91,6 +116,7 @@ public class StripeWebhookController {
             paymentService.markEventProcessed(event.getId());
 
         } catch (Exception e) {
+            paymentService.releaseEventClaim(event.getId());
             log.error("Error processing Stripe event {} ({}): {}",
                     event.getId(), event.getType(), e.getMessage(), e);
             // Return 500 → Stripe will retry (exponential backoff, up to 3 days)

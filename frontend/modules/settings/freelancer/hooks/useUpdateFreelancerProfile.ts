@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { UpdateFreelancerProfileRequest } from "../types/settings.freelancer";
-import { updateFreelancerProfile } from "../services/settings.freelancer";
+import { updateFreelancerProfile } from "../api/settings.freelancer.api";
 import { profileKeys } from "@/modules/profile/shared";
 import { toast } from "sonner";
 

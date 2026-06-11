@@ -23,7 +23,7 @@ import { useMyBasicProfile } from "@/modules/profile/public";
 export function Sidebar({ isMobile = false }: SidebarProps) {
     const [collapsed, setCollapsed] = useState(false);
     const pathname = usePathname();
-    const  role  = useAuthStore(selectRole);
+    const role = useAuthStore(selectRole);
     const { handleLogout } = useLogout();
 
     const { data: profile } = useMyBasicProfile();
@@ -191,7 +191,10 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
                                         href={roleConfig.profileHref}
                                         title={`${profile.name} — Profile`}
                                     >
-                                        <SmartAvatar name={profile.name} size="sm" />
+                                        <SmartAvatar
+                                            name={profile.name}
+                                            size="sm"
+                                        />
                                     </Link>
                                 )}
                                 <button
@@ -209,7 +212,10 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
                                         href={roleConfig.profileHref}
                                         className="flex items-center gap-3 px-3 py-2.5 hover:bg-muted/60 transition-colors rounded-lg group"
                                     >
-                                        <SmartAvatar name={profile.name} size="sm" />
+                                        <SmartAvatar
+                                            name={profile.name}
+                                            size="sm"
+                                        />
                                         <div className="flex-1 min-w-0">
                                             <p className="text-xs font-semibold text-foreground truncate leading-tight">
                                                 {profile.name}

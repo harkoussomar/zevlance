@@ -27,11 +27,11 @@ export const projectSchema = z
       message: "Please select a category",
     }),
 
-    budgetMin: z.coerce
+    budgetMin: z
       .number({ message: "Enter a valid minimum budget" })
       .positive("Minimum budget must be greater than 0"),
 
-    budgetMax: z.coerce
+    budgetMax: z
       .number({ message: "Enter a valid maximum budget" })
       .positive("Maximum budget must be greater than 0"),
 
@@ -53,3 +53,4 @@ export const projectSchema = z
   });
 
 export type ProjectFormValues = z.infer<typeof projectSchema>;
+export type ProjectFormInput = z.input<typeof projectSchema>;

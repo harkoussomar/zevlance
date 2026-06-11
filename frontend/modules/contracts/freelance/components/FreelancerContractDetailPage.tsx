@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, RefreshCcw } from "lucide-react";
 
 import { SkeletonCard } from "@/modules/shared/components/skeleton";
-import { Alert } from "@/modules/shared/components/alert";
-import { ContractSidebar } from "../../shared";
+import { EmptyState } from "@/modules/shared/components/empty-state";
+import { Button } from "@/modules/shared/components/button";
+import { ContractSidebar } from "../../shared/components/ContractSidebar";
 import { PageHeader } from "@/modules/shared/components/PageHeader";
 
 import { useContract } from "../../shared/hooks/contract.shared.useContract";
@@ -15,35 +16,65 @@ import { useContractMilestones } from "@/modules/milestone/shared";
 import { FreelancerContractHeaderActions } from "./FreelancerContractHeaderActions";
 import { FreelancerContractMilestones } from "./FreelancerContractMilestones";
 import { ContractReview } from "@/modules/review";
+import { DisputeFrozenBanner } from "@/modules/dispute/components/DisputeFrozenBanner";
 
 interface FreelancerContractDetailPageProps {
     contractId: string;
 }
 
-export function FreelancerContractDetailPage({ contractId }: FreelancerContractDetailPageProps) {
-    const { data: contract, isPending: contractPending, isError: contractError } = useContract(contractId);
-    const { data: milestones = [], isPending: milestonesPending, isError: milestonesError } = useContractMilestones(contractId);
+export function FreelancerContractDetailPage({
+    contractId,
+}: FreelancerContractDetailPageProps) {
+    const {
+        data: contract,
+        isPending: contractPending,
+        isError: contractError,
+    } = useContract(contractId);
 
+    const {
+        data: milestones = [],
+        isPending: milestonesPending,
+        isError: milestonesError,
+    } = useContractMilestones(contractId);
+
+    // ─── Guard Returns ─────────────────────────────────────────────────────────
     if (contractPending) return <SkeletonCard />;
-    
+
     if (contractError || !contract) {
         return (
-            <Alert variant="destructive">
-                Failed to load contract. Please refresh the page.
-            </Alert>
+            <div className="pt-8 px-4">
+                <EmptyState
+                    preset="error"
+                    title="Failed to load contract"
+                    description="There was a problem retrieving this contract. Please check your connection or try again."
+                    action={
+                        <Button
+                            variant="outline"
+                            onClick={() => window.location.reload()}
+                        >
+                            <RefreshCcw className="w-4 h-4 mr-2" />
+                            Refresh Page
+                        </Button>
+                    }
+                />
+            </div>
         );
     }
 
     const isActive = contract.status === "ACTIVE";
     const isCompleted = contract.status === "COMPLETED";
+    const isDisputed = contract.status === "DISPUTED";
 
+    // ─── Main Render ───────────────────────────────────────────────────────────
     return (
-        <div className="space-y-6">
+        <div className="space-y-4 md:space-y-6">
+            {/* Back navigation */}
             <Link
                 href="/freelancer/contracts"
-                className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors min-h-11 -ml-1 px-1 rounded-md hover:bg-muted/40"
             >
-                <ArrowLeft className="w-4 h-4" /> All Contracts
+                <ArrowLeft className="w-4 h-4 shrink-0" />
+                <span>All Contracts</span>
             </Link>
 
             <PageHeader
@@ -53,27 +84,44 @@ export function FreelancerContractDetailPage({ contractId }: FreelancerContractD
                         #{contract.id.slice(0, 8).toUpperCase()}
                     </span>
                 }
-                action={isActive && <FreelancerContractHeaderActions contractId={contractId} />}
+                // Header actions are only shown when the contract is active (not disputed)
+                action={
+                    isActive && (
+                        <FreelancerContractHeaderActions
+                            contractId={contractId}
+                        />
+                    )
+                }
             />
 
-            <div className="grid lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 space-y-5">
-                    <FreelancerContractMilestones 
+            {/* ── Dispute frozen banner — shown prominently when disputed ── */}
+            {isDisputed && (
+                  <DisputeFrozenBanner
+                    contractId={contractId}
+                />
+            )}
+
+            <div className="grid gap-4 md:gap-6 md:grid-cols-3">
+                {/* ── Primary content ─────────────────────────────────────── */}
+                <div className="md:col-span-2 space-y-4 md:space-y-5">
+                    <FreelancerContractMilestones
                         contractId={contractId}
-                        isActive={isActive}
+                        // Milestones are read-only when disputed
+                        isActive={isActive && !isDisputed}
                         milestones={milestones}
                         isPending={milestonesPending}
                         isError={milestonesError}
                     />
 
                     {isCompleted && (
-                        <ContractReview 
-                            contractId={contractId} 
-                            revieweeName={contract.clientName} 
+                        <ContractReview
+                            contractId={contractId}
+                            revieweeName={contract.clientName}
                         />
                     )}
                 </div>
 
+                {/* ── Sidebar ─────────────────────────────────────────────── */}
                 <ContractSidebar
                     contract={contract}
                     perspective="freelancer"

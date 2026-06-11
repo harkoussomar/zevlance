@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getMyProjects } from "../services/project.client";
+import { getMyProjects } from "../api/project.client.api";
 import { projectKeys } from "../../shared/hooks/project.keys";
 import type { MyProjectFilters } from "../types/project.client";
 

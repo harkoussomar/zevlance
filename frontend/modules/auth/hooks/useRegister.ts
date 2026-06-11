@@ -10,7 +10,7 @@ import type {
 import { Role } from "@/modules/shared/types";
 import { toFreelancerPayload } from "../utils/to-freelancer-payload";
 import { toClientPayload } from "../utils/to-client-payload";
-import { authService } from "../services/auth.service";
+import { authService } from "../api/auth.api";
 import { parseApiError, ROLE_REDIRECT } from "@/modules/shared";
 
 interface UseRegisterReturn<TData> {

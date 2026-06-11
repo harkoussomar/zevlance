@@ -14,6 +14,7 @@ public record CreateMilestoneRequest(
         String description,
 
         @Positive(message = "Amount must be positive")
+        @Digits(integer = 6, fraction = 2, message = "Amount must be a valid USD amount with at most 2 decimal places")
         BigDecimal amount,
 
         @NotNull(message = "Due date is required")

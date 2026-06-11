@@ -38,7 +38,6 @@ export function BidForm({ projectId, onSuccess }: BidFormProps) {
     } = useForm<CreateBidFormValues>({
         resolver: standardSchemaResolver(createBidSchema),
         defaultValues: {
-            // Note: If your schema (e.g. Zod) uses z.coerce.number(), you don't strictly need valueAsNumber below
             proposedPrice: undefined,
             estimatedDays: undefined,
             coverLetter: "",
@@ -76,7 +75,7 @@ export function BidForm({ projectId, onSuccess }: BidFormProps) {
                 </Alert>
             )}
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField
                     label="Your Price (USD)"
                     required
@@ -139,7 +138,7 @@ export function BidForm({ projectId, onSuccess }: BidFormProps) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * 4. ISOLATED RE-RENDERS: 
+ * 4. ISOLATED RE-RENDERS:
  * By putting `useWatch` inside this tiny component, ONLY this span re-renders
  * when the user types in the Textarea. The main `BidForm` stays lightning fast.
  */
@@ -158,8 +157,8 @@ function CoverLetterHint({
 
     return (
         <span>
-            {currentLength} / 3000 chars · min 50 — tell the client why you&apos;re
-            the best fit
+            {currentLength} / 3000 chars · min 50 — tell the client why
+            you&apos;re the best fit
         </span>
     );
 }

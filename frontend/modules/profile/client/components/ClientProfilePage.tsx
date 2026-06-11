@@ -19,7 +19,7 @@ import {
 } from "@/modules/shared/components/card";
 import { Badge } from "@/modules/shared/components/badge";
 
-import { ServerFetchError } from "@/modules/shared/lib/server-fetch";
+import { ServerFetchError } from "@/modules/shared/lib/bff/server-fetch";
 import {
     ProfileHero,
     ProfileStatCard,
@@ -28,8 +28,8 @@ import {
 
 import type { ClientProfileResponse } from "../types/profile.client";
 import Link from "next/link";
-import { getMyClientProfileServer } from "../services/profile.client.server";
-import { getClientReviewsServer } from "../../public/services/profile.public.server";
+import { getMyClientProfileServer } from "../api/profile.client.server.api";
+import { getClientReviewsServer } from "@/modules/review/server/review.server";
 import type { ReviewResponse } from "@/modules/review";
 
 // ─── Inner layout ─────────────────────────────────────────────────────────────

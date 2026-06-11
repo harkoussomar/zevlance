@@ -3,12 +3,12 @@
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth-store";
-import { authService } from "../services/auth.service";
+import { authService } from "../api/auth.api";
 
 interface UseLogoutReturn {
-  handleLogout: () => Promise<void>;
-  isLoading: boolean;
-  logoutError: string | null;
+    handleLogout: () => Promise<void>;
+    isLoading: boolean;
+    logoutError: string | null;
 }
 
 /**
@@ -31,32 +31,34 @@ interface UseLogoutReturn {
  * 5. `handleLogout` is wrapped in `useCallback` for a stable reference.
  */
 export function useLogout(): UseLogoutReturn {
-  const router = useRouter();
-  const storeLogout = useAuthStore((s) => s.logout);
+    const router = useRouter();
+    const storeLogout = useAuthStore((s) => s.logout);
 
-  const [isLoading, setIsLoading] = useState(false);
-  const [logoutError, setLogoutError] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [logoutError, setLogoutError] = useState<string | null>(null);
 
-  const handleLogout = useCallback(async () => {
-    setIsLoading(true);
-    setLogoutError(null);
+    const handleLogout = useCallback(async () => {
+        setIsLoading(true);
+        setLogoutError(null);
 
-    try {
-      await authService.logout();
-    } catch {
-      // Surface the error but do NOT block local logout — a user should never
-      // be unable to log out just because the API is temporarily unreachable.
-      setLogoutError("Could not reach the server. You have been logged out locally.");
-    } finally {
-      // Always clear local state, regardless of API outcome
-      storeLogout();
-      setIsLoading(false);
+        try {
+            await authService.logout();
+        } catch {
+            // Surface the error but do NOT block local logout — a user should never
+            // be unable to log out just because the API is temporarily unreachable.
+            setLogoutError(
+                "Could not reach the server. You have been logged out locally.",
+            );
+        } finally {
+            // Always clear local state, regardless of API outcome
+            storeLogout();
+            setIsLoading(false);
 
-      // Use router.push for SPA navigation. Replace with window.location.href
-      // if your Spring session requires a full-page reload to clear cookies.
-      router.push("/login");
-    }
-  }, [router, storeLogout]);
+            // Use router.push for SPA navigation. Replace with window.location.href
+            // if your Spring session requires a full-page reload to clear cookies.
+            router.push("/login");
+        }
+    }, [router, storeLogout]);
 
-  return { handleLogout, isLoading, logoutError };
+    return { handleLogout, isLoading, logoutError };
 }

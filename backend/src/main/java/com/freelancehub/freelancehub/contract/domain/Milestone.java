@@ -1,10 +1,12 @@
 package com.freelancehub.freelancehub.contract.domain;
 
+import com.freelancehub.freelancehub.payment.domain.RefundStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.UuidGenerator;
+import jakarta.persistence.Version;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -20,6 +22,9 @@ public class Milestone {
     @UuidGenerator
     @Column(length = 36)
     private String id;
+
+    @Version
+    private Long version;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "contract_id", nullable = false)
@@ -65,6 +70,19 @@ public class Milestone {
 
     /** When the funds were released to the freelancer. */
     private LocalDateTime releasedAt;
+
+    /** Stripe Transfer ID created when the approved payout is released. */
+    @Column(length = 255)
+    private String stripeTransferId;
+
+    /** Stripe Refund ID created when a refund is initiated. */
+    @Column(length = 255)
+    private String stripeRefundId;
+
+    /** Durable refund lifecycle state, updated by Stripe refund webhooks. */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    private RefundStatus refundStatus = RefundStatus.NONE;
 
     /** Number of revisions requested — enforces the max-revision cap. */
     @Column(nullable = false)

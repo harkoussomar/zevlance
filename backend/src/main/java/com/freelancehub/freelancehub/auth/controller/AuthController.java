@@ -2,6 +2,7 @@ package com.freelancehub.freelancehub.auth.controller;
 
 import com.freelancehub.freelancehub.auth.dto.*;
 import com.freelancehub.freelancehub.auth.service.AuthService;
+import com.freelancehub.freelancehub.exception.UnauthorizedException;
 import com.freelancehub.freelancehub.user.domain.User;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -111,6 +112,10 @@ public class AuthController {
 
     @GetMapping("/me")
     public ResponseEntity<AuthResponse> me(@AuthenticationPrincipal User currentUser) {
+        if (currentUser == null) {
+            throw new UnauthorizedException("User not authenticated");
+        }
+
         return ResponseEntity.ok(
                 new AuthResponse(
                         currentUser.getEmail(),

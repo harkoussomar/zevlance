@@ -1,63 +1,42 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect } from "react";
 import { Briefcase } from "lucide-react";
 
 import { ProjectListItem } from "./ProjectListItem";
-import { ProjectFilter } from "./ProjectFilters";
 import { Button } from "@/modules/shared/components/button";
-import { EmptyState } from "@/modules/shared/components/empty-state";
-import type { ProjectCategory } from "../../shared/types/project.shared";
 import type { ProjectFilters } from "../types/project.public";
 import { useProjects } from "../hooks/useProjects";
 import { SmartPagination } from "@/modules/shared/components/Pagination";
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-
-const PAGE_SIZE = 10;
 const SKELETON_COUNT = 6;
-
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface ProjectListPanelProps {
     selectedId: string;
-    /** User explicitly selected a project (e.g. via click). */
     onSelect: (id: string) => void;
-    /**
-     * The panel auto-selected a project (e.g. first item on load/filter change).
-     * Defaults to `onSelect` when not provided.
-     * Separate from `onSelect` so the parent can decide whether to open
-     * the detail panel on mobile on auto-selection.
-     */
     onAutoSelect?: (id: string) => void;
+    filters: ProjectFilters;
+    onPageChange: (page: number) => void;
+    hasActiveFilters: boolean;
+    onClearFilters: () => void;
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
-/** Animated skeleton rows shown while the project list is loading. */
 function ProjectListSkeleton() {
     return (
-        <div className="flex flex-col divide-y divide-border/60 animate-pulse">
+        <div className="flex flex-col animate-pulse">
             {Array.from({ length: SKELETON_COUNT }).map((_, i) => (
-                <div key={i} className="px-5 py-5 space-y-3">
-                    {/* Badge row */}
+                <div key={i} className="px-6 py-5 space-y-4 border-b border-border/40">
+                    <div className="flex justify-between items-start gap-4">
+                        <div className="h-5 w-3/4 bg-muted/60 rounded-sm" />
+                        <div className="h-5 w-20 bg-muted/60 rounded-sm shrink-0" />
+                    </div>
                     <div className="flex gap-2">
-                        <div className="h-5 w-20 bg-muted rounded-full" />
-                        <div className="h-5 w-16 bg-muted rounded-full" />
+                        <div className="h-6 w-24 bg-muted/40 rounded-none" />
+                        <div className="h-6 w-16 bg-muted/40 rounded-none" />
                     </div>
-                    {/* Title */}
-                    <div className="h-4 bg-muted rounded w-5/6" />
-                    <div className="h-4 bg-muted rounded w-3/4" />
-                    {/* Skills */}
-                    <div className="flex gap-1.5 pt-0.5">
-                        <div className="h-5 w-14 bg-muted rounded-full" />
-                        <div className="h-5 w-18 bg-muted rounded-full" />
-                        <div className="h-5 w-12 bg-muted rounded-full" />
-                    </div>
-                    {/* Footer */}
-                    <div className="flex justify-between pt-0.5">
-                        <div className="h-3.5 w-24 bg-muted rounded" />
-                        <div className="h-3.5 w-20 bg-muted rounded" />
+                    <div className="flex justify-between pt-1">
+                        <div className="h-3 w-32 bg-muted/30 rounded-sm" />
+                        <div className="h-3 w-16 bg-muted/30 rounded-sm" />
                     </div>
                 </div>
             ))}
@@ -65,50 +44,21 @@ function ProjectListSkeleton() {
     );
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
-
 export function ProjectListPanel({
     selectedId,
     onSelect,
     onAutoSelect,
+    filters,
+    onPageChange,
+    hasActiveFilters,
+    onClearFilters,
 }: ProjectListPanelProps) {
-    // ── Filter state ───────────────────────────────────────────────────────────
-    const [search, setSearch] = useState("");
-    const [category, setCategory] = useState<ProjectCategory | "">("");
-    const [budgetMin, setBudgetMin] = useState("");
-    const [budgetMax, setBudgetMax] = useState("");
-    const [page, setPage] = useState(0);
-
-    const filters: ProjectFilters = useMemo(
-        () => ({
-            page,
-            size: PAGE_SIZE,
-            category: category || undefined,
-            budgetMin: budgetMin ? Number(budgetMin) : undefined,
-            budgetMax: budgetMax ? Number(budgetMax) : undefined,
-            query: search || undefined,
-        }),
-        [page, category, budgetMin, budgetMax, search],
-    );
-
-const hasActiveFilters = useMemo(
-    () => [category, budgetMin, budgetMax, search].some(Boolean),
-    [category, budgetMin, budgetMax, search],
-);
-
-    // ── Data fetching ──────────────────────────────────────────────────────────
     const { data, isLoading, error } = useProjects(filters);
 
     const projects = data?.content ?? [];
     const totalPages = data?.totalPages ?? 0;
     const totalElements = data?.totalElements ?? 0;
 
-    // ── Side-effects ───────────────────────────────────────────────────────────
-
-    /**
-     * Auto-select the first project whenever the list refreshes and nothing is
-     * selected (e.g. initial load, filter change clears current selection).
-     */
     useEffect(() => {
         if (projects.length > 0 && !selectedId) {
             const autoSelectFn = onAutoSelect ?? onSelect;
@@ -116,100 +66,68 @@ const hasActiveFilters = useMemo(
         }
     }, [projects, selectedId, onSelect, onAutoSelect]);
 
-    // ── Handlers ──────────────────────────────────────────────────────────────
-    const clearFilters = useCallback(() => {
-        setCategory("");
-        setBudgetMin("");
-        setBudgetMax("");
-        setSearch("");
-        setPage(0);
-    }, []);
-
-    // ── Error state ────────────────────────────────────────────────────────────
     if (error) {
         return (
-            <div className="flex flex-col flex-1 items-center justify-center gap-4 p-8 text-center">
-                <p className="text-sm font-medium text-destructive">
-                    Failed to load projects.
-                </p>
-                <p className="text-xs text-muted-foreground">
-                    Check your connection and try again.
-                </p>
-                <Button variant="outline" size="sm" onClick={clearFilters}>
-                    Reset & retry
+            <div className="flex flex-col flex-1 items-center justify-center gap-5 p-8 text-center animate-in fade-in duration-500">
+                <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
+                    <span className="text-xl font-display text-destructive font-bold">!</span>
+                </div>
+                <div className="space-y-1">
+                    <p className="text-sm font-display font-medium text-foreground">Data disruption</p>
+                    <p className="text-xs font-mono text-muted-foreground uppercase tracking-widest">Unable to retrieve index</p>
+                </div>
+                <Button variant="outline" size="sm" onClick={onClearFilters} className="rounded-none font-mono uppercase text-[10px] tracking-wider mt-2">
+                    Reset Coordinates
                 </Button>
             </div>
         );
     }
 
-    // ── Render ─────────────────────────────────────────────────────────────────
     return (
-        <div className="flex flex-col h-full min-h-0">
-            {/* ── Header ──────────────────────────────────────────────────── */}
-            <div className="px-5 py-4 border-b border-border shrink-0 space-y-4">
-                <div className="flex items-baseline justify-between gap-2">
-                    <h2 className="text-base font-bold text-foreground tracking-tight">
-                        Browse Projects
-                    </h2>
-                    {!isLoading && (
-                        <span className="text-xs font-medium text-muted-foreground tabular-nums">
-                            {totalElements.toLocaleString()}{" "}
-                            {totalElements === 1 ? "result" : "results"}
-                        </span>
-                    )}
-                </div>
-
-                <ProjectFilter
-                    search={search}
-                    setSearch={setSearch}
-                    category={category}
-                    setCategory={setCategory}
-                    budgetMin={budgetMin}
-                    setBudgetMin={setBudgetMin}
-                    budgetMax={budgetMax}
-                    setBudgetMax={setBudgetMax}
-                    setPage={setPage}
-                    hasActiveFilters={hasActiveFilters}
-                    clearFilters={clearFilters}
-                />
+        <div className="flex flex-col h-full min-h-0 bg-background/40">
+            {/* ── Internal Minimal List Header ─────────────────────────────── */}
+            <div className="px-6 py-4 border-b border-border/80 shrink-0 flex items-end justify-between bg-card/20 backdrop-blur-sm z-10">
+                <span className="font-display text-sm font-bold text-foreground uppercase tracking-wider">
+                    Index
+                </span>
+                {!isLoading && (
+                    <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground tabular-nums">
+                        [ {totalElements.toLocaleString()} entries ]
+                    </span>
+                )}
             </div>
 
             {/* ── Project list ─────────────────────────────────────────────── */}
-            <div className="flex-1 overflow-y-auto min-h-0">
+            <div className="flex-1 overflow-y-auto min-h-0 scrollbar-none">
                 {isLoading ? (
                     <ProjectListSkeleton />
                 ) : projects.length === 0 ? (
-                    <div className="flex items-center justify-center h-full min-h-60 p-6">
-                        <EmptyState
-                            icon={<Briefcase className="w-5 h-5" />}
-                            title="No projects found"
-                            description={
-                                hasActiveFilters
-                                    ? "No projects match your current filters."
-                                    : "There are no projects available right now."
-                            }
-                            action={
-                                hasActiveFilters ? (
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={clearFilters}
-                                    >
-                                        Clear filters
-                                    </Button>
-                                ) : undefined
-                            }
-                        />
+                    <div className="flex flex-col items-center justify-center h-full min-h-[15rem] p-6 text-center animate-in fade-in">
+                        <Briefcase className="w-8 h-8 text-muted-foreground/30 mb-4" strokeWidth={1} />
+                        <h3 className="font-display text-lg font-semibold text-foreground mb-1">Void</h3>
+                        <p className="text-sm text-muted-foreground max-w-[200px] mb-6">
+                            {hasActiveFilters ? "Parameters yielded zero results." : "The directory is currently empty."}
+                        </p>
+                        {hasActiveFilters && (
+                            <Button variant="outline" size="sm" onClick={onClearFilters} className="rounded-none font-mono text-[11px] uppercase tracking-wider">
+                                Clear Parameters
+                            </Button>
+                        )}
                     </div>
                 ) : (
-                    <div className="divide-y divide-border/60">
-                        {projects.map((project) => (
-                            <ProjectListItem
-                                key={project.id}
-                                project={project}
-                                isSelected={project.id === selectedId}
-                                onSelect={onSelect}
-                            />
+                    <div className="divide-y divide-border/40">
+                        {projects.map((project, index) => (
+                            <div 
+                                key={project.id} 
+                                className="animate-in fade-in slide-in-from-bottom-2 fill-mode-backwards"
+                                style={{ animationDelay: `${index * 50}ms`, animationDuration: '400ms' }}
+                            >
+                                <ProjectListItem
+                                    project={project}
+                                    isSelected={project.id === selectedId}
+                                    onSelect={onSelect}
+                                />
+                            </div>
                         ))}
                     </div>
                 )}
@@ -217,11 +135,11 @@ const hasActiveFilters = useMemo(
 
             {/* ── Pagination ───────────────────────────────────────────────── */}
             {totalPages > 1 && (
-                <div className="shrink-0 border-t border-border py-2.5 px-3">
+                <div className="shrink-0 border-t border-border/80 py-3 px-4 bg-background z-10">
                     <SmartPagination
-                        page={page}
+                        page={filters.page || 0}
                         totalPages={totalPages}
-                        onPageChange={setPage}
+                        onPageChange={onPageChange}
                     />
                 </div>
             )}

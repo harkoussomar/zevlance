@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { cn } from "@/modules/shared";
@@ -13,9 +14,33 @@ import { cn } from "@/modules/shared";
  */
 export function ThemeToggle() {
     const { resolvedTheme, setTheme } = useTheme();
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        const timer = setTimeout(() => setMounted(true), 0);
+        return () => clearTimeout(timer);
+    }, []);
+
     const isDark = resolvedTheme === "dark";
 
     const toggle = () => setTheme(isDark ? "light" : "dark");
+
+    // Render a placeholder with exact dimensions before hydration
+    // to prevent both layout shift and hydration mismatch errors.
+    if (!mounted) {
+        return (
+            <button
+                type="button"
+                className={cn(
+                    "relative w-8 h-8 rounded-lg",
+                    "flex items-center justify-center",
+                    "text-muted-foreground hover:bg-muted/50",
+                    "transition-colors duration-100",
+                )}
+                aria-hidden="true"
+            />
+        );
+    }
 
     return (
         <button

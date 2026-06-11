@@ -59,12 +59,6 @@ export function HowItWorksSection() {
 
                 {/* Steps */}
                 <div className="grid md:grid-cols-3 gap-0 relative">
-                    {/* Horizontal connector line on desktop */}
-                    <div
-                        aria-hidden="true"
-                        className="hidden md:block absolute top-10 left-[16.667%] right-[16.667%] h-px bg-border z-0"
-                    />
-
                     {HOW_IT_WORKS.map((step, i) => (
                         <div key={i} className="relative group">
                             {/* Mobile connector */}
@@ -72,7 +66,7 @@ export function HowItWorksSection() {
                                 <div className="md:hidden absolute left-8 top-20 bottom-0 w-px bg-border z-0" />
                             )}
 
-                            <div className="relative z-10 p-6 sm:p-8 md:p-10 rounded-2xl transition-all duration-[var(--duration-slow)] hover:bg-background hover:shadow-[var(--shadow-md)] group/card">
+                            <div className="relative z-10 p-6 sm:p-8 md:p-10 rounded-2xl transition-all duration-[var(--duration-slow)] hover:bg-background hover:shadow-[var(--shadow-md)] group/card h-full">
                                 {/* Huge decorative number */}
                                 <div className="relative mb-6 flex md:block items-center gap-5 md:gap-0">
                                     <div

@@ -11,14 +11,14 @@ import {
 import { Button } from "@/modules/shared/components/button";
 import { StatCard } from "@/modules/shared/components/stat-card";
 import { Alert } from "@/modules/shared/components/alert";
-import { ServerFetchError } from "@/modules/shared/lib/server-fetch";
+import { ServerFetchError } from "@/modules/shared/lib/bff/server-fetch";
 import { formatCurrency } from "@/modules/shared";
 import { ActiveContracts } from "@/modules/shared/components/ActiveContracts";
-import { getFreelancerOverview } from "./services/overview.server";
 import { RecentBids } from "./components/RecentBids";
 import { LatestReviews } from "./components/LatestReviews";
 import type { FreelancerOverviewResponse } from "./types/overview.freelancer";
 import { PageHeader } from "@/modules/shared/components/PageHeader";
+import { getFreelancerOverview } from "./api/overview.server.api";
 
 export async function FreelancerOverview() {
     let dashboard: FreelancerOverviewResponse;
@@ -39,7 +39,8 @@ export async function FreelancerOverview() {
         );
     }
 
-    const { user,stats, activeContracts, recentBids, latestReviews } = dashboard;
+    const { user, stats, activeContracts, recentBids, latestReviews } =
+        dashboard;
 
     const subtitle = `${stats.activeContractsCount} active ${stats.activeContractsCount === 1 ? "contract" : "contracts"}, ${stats.pendingBidsCount} pending ${stats.pendingBidsCount === 1 ? "bid" : "bids"}.`;
 
@@ -61,7 +62,7 @@ export async function FreelancerOverview() {
             />
 
             {/* Stats grid */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 <StatCard
                     label="Total Earned"
                     value={formatCurrency(stats.totalEarned)}

@@ -35,6 +35,9 @@ public class StripeEventLog {
     @Column(updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(columnDefinition = "TEXT")
+    private String lastError;
+
     public StripeEventLog(String id, String type) {
         this.id = id;
         this.type = type;

@@ -26,7 +26,6 @@ export function FreelancerContractMilestones({
     isPending,
     isError,
 }: FreelancerContractMilestonesProps) {
-    
     const approvedMilestones = milestones.filter((m) => m.status === "APPROVED");
     const pct = percentage(approvedMilestones.length, milestones.length);
 
@@ -49,29 +48,41 @@ export function FreelancerContractMilestones({
 
     // ─── Main Render ───────────────────────────────────────────────────────────
     return (
-        <div className="space-y-5">
+        <div className="space-y-3 md:space-y-4">
             {/* Milestone progress card */}
             <Card>
-                <CardContent className="p-5">
-                    <div className="flex items-center gap-2 mb-4">
-                        <Layers className="w-4 h-4 text-muted-foreground" />
-                        <h2 className="font-semibold text-foreground text-sm">Milestones</h2>
+                <CardContent className="p-4 md:p-5">
+                    {/*
+                     * flex-wrap: prevents overflow when the approved count
+                     * string is long on narrow screens
+                     */}
+                    <div className="flex items-center gap-2 mb-3 md:mb-4 flex-wrap">
+                        <Layers className="w-4 h-4 text-muted-foreground shrink-0" />
+                        <h2 className="font-semibold text-foreground text-sm">
+                            Milestones
+                        </h2>
                         <span className="text-sm text-muted-foreground">
-                            ({approvedMilestones.length}/{milestones.length} approved)
+                            ({approvedMilestones.length}/{milestones.length}{" "}
+                            approved)
                         </span>
                     </div>
                     <Progress value={pct} barClassName="bg-success" />
                     {milestones.length > 0 && (
-                        <p className="text-xs text-muted-foreground mt-2">{pct}% complete</p>
+                        <p className="text-xs text-muted-foreground mt-2">
+                            {pct}% complete
+                        </p>
                     )}
                 </CardContent>
             </Card>
 
-            {/* Info banner */}
+            {/* Info banner — only shown when contract is active but no milestones */}
             {isActive && milestones.length === 0 && (
-                <div className="flex items-start gap-2.5 p-3.5 rounded-lg bg-info/8 border border-info/20 text-sm text-info">
+                <div className="flex items-start gap-2.5 p-3 md:p-3.5 rounded-lg bg-info/8 border border-info/20 text-sm text-info">
                     <Info className="w-4 h-4 shrink-0 mt-0.5" />
-                    <p>The client has not added any milestones yet. Once they do, you&apos;ll be able to submit deliverables here.</p>
+                    <p className="leading-relaxed">
+                        The client has not added any milestones yet. Once they
+                        do, you&apos;ll be able to submit deliverables here.
+                    </p>
                 </div>
             )}
 

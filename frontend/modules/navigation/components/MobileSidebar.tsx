@@ -1,16 +1,17 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { Sidebar } from "./Sidebar";
 import type { MobileSidebarProps } from "../types";
 
-export function MobileSidebar({ open, onClose }: MobileSidebarProps) {
-    const [mounted, setMounted] = useState(false);
+// useSyncExternalStore-based hydration guard — avoids setState-in-effect lint error
+function subscribe() { return () => {}; }
+function getSnapshot() { return true; }
+function getServerSnapshot() { return false; }
 
-    useEffect(() => {
-        setMounted(true);
-    }, []);
+export function MobileSidebar({ open, onClose }: MobileSidebarProps) {
+    const mounted = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
     // Lock body scroll when open
     useEffect(() => {

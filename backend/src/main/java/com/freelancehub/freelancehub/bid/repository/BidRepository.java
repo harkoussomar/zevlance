@@ -68,4 +68,7 @@ public interface BidRepository extends JpaRepository<Bid, String> {
           AND b.status = 'ACCEPTED'
         """)
     double sumAcceptedValueByFreelancerId(@Param("freelancerId") String freelancerId);
+
+    @Query("SELECT COUNT(b) FROM Bid b WHERE b.freelancer.id = :freelancerId")
+    long countByFreelancerId(@Param("freelancerId") String freelancerId);
 }

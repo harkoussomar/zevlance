@@ -34,7 +34,10 @@ const TESTIMONIALS: TestimonialItem[] = [
 
 function StarRow({ rating }: { rating: number }) {
     return (
-        <div className="flex gap-0.5" aria-label={`Rated ${rating} out of 5 stars`}>
+        <div
+            className="flex gap-0.5"
+            aria-label={`Rated ${rating} out of 5 stars`}
+        >
             {Array.from({ length: 5 }).map((_, i) => (
                 <svg
                     key={i}
@@ -49,9 +52,17 @@ function StarRow({ rating }: { rating: number }) {
     );
 }
 
-function TestimonialCard({ testimonial, featured }: { testimonial: TestimonialItem; featured?: boolean }) {
+function TestimonialCard({
+    testimonial,
+    featured,
+}: {
+    testimonial: TestimonialItem;
+    featured?: boolean;
+}) {
     return (
-        <Card className={`group relative p-7 sm:p-8 flex flex-col h-full overflow-hidden transition-all duration-[var(--duration-slow)] hover:-translate-y-1 hover:shadow-[var(--shadow-lg)] ${featured ? "md:p-10" : ""}`}>
+        <Card
+            className={`group relative p-7 sm:p-8 flex flex-col h-full overflow-hidden transition-all duration-[var(--duration-slow)] hover:-translate-y-1 hover:shadow-[var(--shadow-lg)] ${featured ? "md:p-10" : ""}`}
+        >
             {/* Decorative large quote */}
             <div
                 aria-hidden="true"
@@ -77,7 +88,10 @@ function TestimonialCard({ testimonial, featured }: { testimonial: TestimonialIt
                             {testimonial.role}
                         </p>
                     </div>
-                    <BadgeCheck className="w-5 h-5 text-success shrink-0" aria-label="Verified User" />
+                    <BadgeCheck
+                        className="w-5 h-5 text-success shrink-0"
+                        aria-label="Verified User"
+                    />
                 </div>
             </div>
         </Card>
@@ -88,26 +102,32 @@ export function TestimonialsSection() {
     return (
         <section className="py-24 lg:py-32 bg-muted/20 border-y border-border">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
                 {/* Header */}
                 <div className="grid lg:grid-cols-2 gap-8 items-end mb-14">
                     <div>
                         <SectionLabel>Testimonials</SectionLabel>
                         <h2 className="font-display text-[clamp(2.25rem,4.5vw,3.75rem)] font-bold tracking-tight text-foreground mt-4 leading-[1.05]">
-                            Trusted by builders<br />
-                            <span className="text-gradient-primary">and clients alike.</span>
+                            Trusted by builders
+                            <br />
+                            <span className="text-gradient-primary">
+                                and clients alike.
+                            </span>
                         </h2>
                     </div>
                     <p className="text-lg text-muted-foreground leading-relaxed lg:max-w-sm lg:self-end lg:pb-1">
-                        Hear from professionals who use Zevlance to do their best work
-                        without the usual friction.
+                        Hear from professionals who use Zevlance to do their
+                        best work without the usual friction.
                     </p>
                 </div>
 
                 {/* Cards */}
                 <div className="grid md:grid-cols-3 gap-5">
                     {TESTIMONIALS.map((t, i) => (
-                        <TestimonialCard key={i} testimonial={t} featured={i === 1} />
+                        <TestimonialCard
+                            key={i}
+                            testimonial={t}
+                            featured={i === 1}
+                        />
                     ))}
                 </div>
 

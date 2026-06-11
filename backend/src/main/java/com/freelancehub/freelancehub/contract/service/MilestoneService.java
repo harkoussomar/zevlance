@@ -20,8 +20,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -43,15 +41,22 @@ public class MilestoneService {
     @PreAuthorize("hasRole('CLIENT')")
     @Transactional
     public MilestoneResponse createMilestone(String contractId, CreateMilestoneRequest request, String clientId) {
-        Contract contract = contractService.findContractById(contractId);
+        Contract contract = contractService.findContractByIdForUpdate(contractId);
         assertClient(contract, clientId);
 
         if (contract.getStatus() != ContractStatus.ACTIVE) {
             throw new IllegalStateException("Milestones can only be added to ACTIVE contracts");
         }
 
+        // Stripe minimum transaction limit
+        if (request.amount().compareTo(BigDecimal.valueOf(5.00)) < 0) {
+            throw new IllegalArgumentException("Milestone amount must be at least $5.00.");
+        }
+
+        // Ignore REFUNDED milestones when calculating remaining budget
         BigDecimal currentTotal = milestoneRepository.findByContractId(contractId)
                 .stream()
+                .filter(m -> m.getStatus() != MilestoneStatus.REFUNDED)
                 .map(Milestone::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
@@ -90,6 +95,7 @@ public class MilestoneService {
     public MilestoneResponse submitDeliverable(String milestoneId, SubmitDeliverableRequest request, String freelancerId) {
         Milestone milestone = findMilestoneById(milestoneId);
         assertFreelancer(milestone, freelancerId);
+        assertActiveContract(milestone.getContract());
 
         String clientId    = milestone.getContract().getBid().getProject().getClient().getId();
         String clientEmail = milestone.getContract().getBid().getProject().getClient().getEmail();
@@ -131,6 +137,7 @@ public class MilestoneService {
     public MilestoneResponse approveMilestone(String milestoneId, String clientId) {
         Milestone milestone = findMilestoneById(milestoneId);
         assertClient(milestone, clientId);
+        assertActiveContract(milestone.getContract());
 
         if (milestone.getStatus() != MilestoneStatus.SUBMITTED) {
             throw new IllegalStateException("Only SUBMITTED milestones can be approved");
@@ -138,12 +145,8 @@ public class MilestoneService {
 
         milestone.setStatus(MilestoneStatus.APPROVED);
 
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                paymentService.releasePayment(milestone);
-            }
-        });
+        // Directly call payment release (It now uses Idempotency Keys inside PaymentService)
+        paymentService.releasePayment(milestone);
 
         autoCompleteContractIfDone(milestone.getContract(), clientId);
 
@@ -172,9 +175,30 @@ public class MilestoneService {
 
     @PreAuthorize("hasRole('CLIENT')")
     @Transactional
+    public MilestoneResponse refundMilestone(String milestoneId, String clientId) {
+        Milestone milestone = findMilestoneById(milestoneId);
+        assertClient(milestone, clientId);
+        assertActiveContract(milestone.getContract());
+
+        if (milestone.getStatus() != MilestoneStatus.FUNDED) {
+            throw new IllegalStateException("Only FUNDED milestones can be directly refunded. Use Dispute for submitted milestones.");
+        }
+
+        if (milestone.getDeliverableUrl() != null) {
+            throw new IllegalStateException("Cannot refund milestone after work has been submitted.");
+        }
+
+        paymentService.refundPayment(milestone);
+
+        return toResponse(milestone);
+    }
+
+    @PreAuthorize("hasRole('CLIENT')")
+    @Transactional
     public MilestoneResponse requestRevision(String milestoneId, String clientId) {
         Milestone milestone = findMilestoneById(milestoneId);
         assertClient(milestone, clientId);
+        assertActiveContract(milestone.getContract());
 
         if (milestone.getStatus() != MilestoneStatus.SUBMITTED) {
             throw new IllegalStateException("Revision can only be requested on SUBMITTED milestones");
@@ -215,13 +239,17 @@ public class MilestoneService {
     }
 
     private void autoCompleteContractIfDone(Contract contract, String clientId) {
-        boolean anyNotApproved = milestoneRepository
-                .existsByContractIdAndStatusNot(contract.getId(), MilestoneStatus.APPROVED);
+        List<Milestone> allMilestones = milestoneRepository.findByContractId(contract.getId());
 
-        if (anyNotApproved) return;
+        // Don't block auto-completion if there's a REFUNDED milestone.
+        boolean hasUnresolvedMilestones = allMilestones.stream()
+                .anyMatch(m -> m.getStatus() != MilestoneStatus.APPROVED
+                        && m.getStatus() != MilestoneStatus.REFUNDED);
 
-        BigDecimal approvedTotal = milestoneRepository.findByContractId(contract.getId())
-                .stream()
+        if (hasUnresolvedMilestones) return;
+
+        BigDecimal approvedTotal = allMilestones.stream()
+                .filter(m -> m.getStatus() == MilestoneStatus.APPROVED)
                 .map(Milestone::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
@@ -259,6 +287,12 @@ public class MilestoneService {
         }
     }
 
+    private void assertActiveContract(Contract contract) {
+        if (contract.getStatus() != ContractStatus.ACTIVE) {
+            throw new IllegalStateException("Milestone actions are only allowed on ACTIVE contracts");
+        }
+    }
+
     public MilestoneResponse toResponse(Milestone m) {
         return new MilestoneResponse(
                 m.getId(),
@@ -273,7 +307,8 @@ public class MilestoneService {
                 m.getFreelancerPayout(),
                 m.getFundedAt(),
                 m.getReleasedAt(),
-                m.getRevisionCount()
+                m.getRevisionCount(),
+                m.getRefundStatus()
         );
     }
 }

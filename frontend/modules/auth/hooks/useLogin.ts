@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/auth-store";
 import type { LoginSchemaType } from "../schemas/login.schema";
-import { authService } from "../services/auth.service";
+import { authService } from "../api/auth.api";
 import { parseApiError, ROLE_REDIRECT } from "@/modules/shared";
 
 interface UseLoginReturn {

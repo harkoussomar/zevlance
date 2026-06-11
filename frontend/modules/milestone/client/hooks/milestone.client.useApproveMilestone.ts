@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { approveMilestone } from "../services/milestone.client";
+import { approveMilestone } from "../api/milestone.client.api";
 import { milestoneKeys } from "../../shared";
 import { contractKeys } from "@/modules/contracts/shared";
 

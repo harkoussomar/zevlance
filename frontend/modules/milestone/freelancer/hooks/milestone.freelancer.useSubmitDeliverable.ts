@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { submitDeliverable } from "../services/milestone.freelancer";
+import { submitDeliverable } from "../api/milestone.freelancer.api";
 import { milestoneKeys } from "../../shared";
 
 export function useSubmitDeliverable(contractId: string) {

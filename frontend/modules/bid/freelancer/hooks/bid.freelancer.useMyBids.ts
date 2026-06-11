@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getMyBids } from "../services/bid.freelancer.service";
+import { getMyBids } from "../api/bid.freelancer.api";
 import { bidKeys } from "../../shared";
 import type { BidFilters } from "../../shared";
 

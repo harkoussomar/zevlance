@@ -1,5 +1,3 @@
-
-
 "use client";
 
 import { useState } from "react";
@@ -12,6 +10,7 @@ import { parseApiError } from "@/modules/shared";
 
 import { useCancelContract } from "../../shared/hooks/contract.shared.useCancelContract";
 import { useDisputeContract } from "../../shared/hooks/contract.shared.useDisputeContract";
+import { FileDisputeDialog } from "../../shared/components/FileDisputeDialog";
 
 interface ConfirmDialogState {
     open: boolean;
@@ -31,54 +30,57 @@ const CLOSED_DIALOG: ConfirmDialogState = {
     action: () => {},
 };
 
-export function FreelancerContractHeaderActions({ contractId }: { contractId: string }) {
+interface FreelancerContractHeaderActionsProps {
+    contractId: string;
+    /**
+     * Pass true when the contract already has an open dispute.
+     * Both action buttons will be hidden — the DisputeFrozenBanner
+     * in the detail page replaces them with a link to the dispute room.
+     */
+    isDisputed?: boolean;
+}
+
+export function FreelancerContractHeaderActions({
+    contractId,
+    isDisputed = false,
+}: FreelancerContractHeaderActionsProps) {
     const { mutate: cancel, isPending: cancelling } = useCancelContract();
     const { mutate: dispute, isPending: disputing } = useDisputeContract();
 
     const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState>(CLOSED_DIALOG);
+    const [disputeDialogOpen, setDisputeDialogOpen] = useState(false);
 
     const isActionPending = cancelling || disputing;
 
-    const openDialog = (dialog: Omit<ConfirmDialogState, "open">) => setConfirmDialog({ open: true, ...dialog });
+    const openDialog = (dialog: Omit<ConfirmDialogState, "open">) =>
+        setConfirmDialog({ open: true, ...dialog });
     const closeDialog = () => setConfirmDialog(CLOSED_DIALOG);
 
-    const handleDispute = () => {
-        openDialog({
-            variant: "warning",
-            title: "Open a Dispute?",
-            description: "This will flag the contract for mediation. Our team will review the situation and contact both parties within 48 hours.",
-            confirmLabel: "Yes, open dispute",
-            action: (e) => {
-                e?.preventDefault();
-                dispute(contractId, {
-                    onSuccess: () => {
-                        toast.info("Dispute opened. Our team will follow up.");
-                        closeDialog(); // ONLY close on success
-                    },
-                    onError: (err) => toast.error(parseApiError(err)),
-                });
-            },
-        });
-    };
+    const handleDispute = () => setDisputeDialogOpen(true);
 
     const handleCancel = () => {
         openDialog({
             variant: "destructive",
             title: "Cancel Contract?",
-            description: "This action cannot be undone. The contract will be permanently cancelled.",
+            description:
+                "This action cannot be undone. The contract will be permanently cancelled.",
             confirmLabel: "Yes, cancel contract",
             action: (e) => {
                 e?.preventDefault();
                 cancel(contractId, {
                     onSuccess: () => {
                         toast.success("Contract cancelled");
-                        closeDialog(); // ONLY close on success
+                        closeDialog();
                     },
                     onError: (err) => toast.error(parseApiError(err)),
                 });
             },
         });
     };
+
+    // When the contract is already disputed, the detail page renders the
+    // DisputeFrozenBanner instead — no header actions are needed.
+    if (isDisputed) return null;
 
     return (
         <>
@@ -111,8 +113,28 @@ export function FreelancerContractHeaderActions({ contractId }: { contractId: st
                 description={confirmDialog.description}
                 confirmLabel={confirmDialog.confirmLabel}
                 isPending={isActionPending}
-                onConfirm={confirmDialog.action} // Action handles its own closure now
+                onConfirm={confirmDialog.action}
                 onCancel={closeDialog}
+            />
+
+            <FileDisputeDialog
+                open={disputeDialogOpen}
+                onOpenChange={setDisputeDialogOpen}
+                isPending={disputing}
+                onConfirm={(payload) => {
+                    dispute(
+                        { id: contractId, ...payload },
+                        {
+                            onSuccess: () => {
+                                toast.info(
+                                    "Dispute opened. Redirecting to mediation room...",
+                                );
+                                setDisputeDialogOpen(false);
+                            },
+                            onError: (err) => toast.error(parseApiError(err)),
+                        },
+                    );
+                }}
             />
         </>
     );

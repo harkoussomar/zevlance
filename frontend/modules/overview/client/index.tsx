@@ -11,13 +11,13 @@ import {
 import { Button } from "@/modules/shared/components/button";
 import { StatCard } from "@/modules/shared/components/stat-card";
 import { Alert } from "@/modules/shared/components/alert";
-import { ServerFetchError } from "@/modules/shared/lib/server-fetch";
+import { ServerFetchError } from "@/modules/shared/lib/bff/server-fetch";
 import { formatCurrency } from "@/modules/shared";
 import { ActiveContracts } from "@/modules/shared/components/ActiveContracts";
 import { PageHeader } from "@/modules/shared/components/PageHeader";
 import { ProjectsList } from "./components/ProjectsList";
-import { getClientOverview } from "./services/overview.server";
 import type { ClientOverviewResponse } from "./types/overview.client";
+import { getClientOverview } from "./api/overview.server.api";
 
 export async function ClientOverview() {
     let dashboard: ClientOverviewResponse;
@@ -38,7 +38,7 @@ export async function ClientOverview() {
         );
     }
 
-    const { user,stats, recentProjects, activeContracts } = dashboard;
+    const { user, stats, recentProjects, activeContracts } = dashboard;
 
     const subtitle = `${stats.openProjectsCount} open ${stats.openProjectsCount === 1 ? "project" : "projects"}, ${stats.totalBidsReceived} total bids received.`;
 
@@ -60,7 +60,7 @@ export async function ClientOverview() {
             />
 
             {/* Stats grid */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 <StatCard
                     label="Open Projects"
                     value={stats.openProjectsCount}
@@ -84,9 +84,9 @@ export async function ClientOverview() {
             </div>
 
             {/* Main content */}
-            <div className="flex flex-wrap gap-5">
+            <div className="grid lg:grid-cols-3 gap-5">
                 {/* Projects — wide column */}
-                <div className="flex-2 space-y-3">
+                <div className="lg:col-span-2 space-y-3">
                     <div className="flex items-center justify-between">
                         <div>
                             <h2 className="text-base font-bold text-foreground">
@@ -106,7 +106,7 @@ export async function ClientOverview() {
                     <ProjectsList projects={recentProjects} />
                 </div>
 
-                <div className="flex-1 space-y-3">
+                <div className="space-y-3">
                     <div className="flex items-center justify-between">
                         <div>
                             <h2 className="text-base font-bold text-foreground">

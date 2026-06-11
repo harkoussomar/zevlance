@@ -3,10 +3,11 @@ import { Role } from "@/modules/shared/types";
 export type SignupStep = "role" | "form";
 
 export interface AuthResponse {
-    email: string;
-    role: Role;
-    userId: string;
-    name: string;
+  email: string;
+  role: Role;
+  userId: string;
+  name: string;
+  emailVerified: boolean; 
 }
 
 export interface LoginRequest {

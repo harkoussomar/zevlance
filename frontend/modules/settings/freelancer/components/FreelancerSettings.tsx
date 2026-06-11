@@ -9,7 +9,7 @@ import {
 import { useState } from "react";
 import { SettingsSidebar } from "../../shared/components/SettingsSidebar";
 import { SectionPanel } from "../../shared/components/SectionPanel";
-import { StripeConnectSection } from "../../client/components/StripeConnectSection";
+import { StripeConnectSection } from "./StripeConnectSection";
 import { FreelancerSettingsForm } from "./FreelancerSettingsForm";
 import { CreditCard, Lock, UserCircle } from "lucide-react";
 import { useMyFreelancerProfile } from "@/modules/profile/freelancer";
@@ -55,7 +55,7 @@ export function FreelancerSettings({
     }
 
     return (
-        <div className="flex gap-8">
+        <div className="flex flex-col lg:flex-row gap-8">
             <SettingsSidebar
                 items={FREELANCER_NAV}
                 active={section}

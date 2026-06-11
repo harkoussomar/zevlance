@@ -1,7 +1,7 @@
 "use client";
 
 import { useQueries } from "@tanstack/react-query";
-import { getContractMilestones } from "../services/milestone.shared";
+import { getContractMilestones } from "../api/milestone.shared.api";
 import { milestoneKeys } from "./milestone.keys";
 
 export function useActiveContractsMilestones(contractIds: string[]) {

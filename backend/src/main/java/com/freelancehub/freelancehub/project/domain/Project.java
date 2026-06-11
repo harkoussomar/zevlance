@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.math.BigDecimal;
@@ -58,13 +59,40 @@ public class Project {
     private List<Bid> bids = new ArrayList<>();
 
     @Column(nullable = false)
+
     private LocalDate deadline;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "client_id", nullable = false)
     private Client client;
 
+    // ── Admin moderation fields ────────────────────────────────────────────────
+
+    /** True when this project has been flagged for policy review. */
+    @Column(nullable = false)
+    private boolean flagged = false;
+
+    /** True when this project is pinned to the platform's featured section. */
+    @Column(nullable = false)
+    private boolean featured = false;
+
+    /** Internal admin note — never surfaced to end users. */
+    @Column(name = "admin_note", columnDefinition = "TEXT")
+    private String adminNote;
+
+    // ── Timestamps ────────────────────────────────────────────────────────────
+
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;
+
+    /**
+     * Auto-updated on any field change.
+     * Required for cache busting on the frontend and audit trail display.
+     */
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 }

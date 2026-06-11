@@ -1,38 +1,22 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Briefcase, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
-import { authService } from "@/modules/auth/services/auth.service";
+import { authService } from "@/modules/auth/api/auth.api";
 import { parseApiError } from "@/modules/shared";
 import { Alert } from "@/modules/shared/components/alert";
 import { FormField } from "@/modules/shared/components/form-field";
-import {  InputField } from "@/modules/shared/components/input";
+import { InputField } from "@/modules/shared/components/input";
 import { Button } from "@/modules/shared/components/button";
 import { LeftDecorativePanel } from "@/modules/auth";
+import { resetPasswordSchema, ResetPasswordSchemaType } from "@/modules/auth/schemas/reset-password.schema";
 
-// ─── Schema ───────────────────────────────────────────────────────────────────
-import { z } from "zod";
 
-const resetSchema = z
-    .object({
-        newPassword: z
-            .string()
-            .min(8, "Password must be at least 8 characters"),
-        confirmPassword: z.string(),
-    })
-    .refine((data) => data.newPassword === data.confirmPassword, {
-        message: "Passwords do not match",
-        path: ["confirmPassword"],
-    });
-
-type ResetSchemaType = z.infer<typeof resetSchema>;
-// ─── Page ─────────────────────────────────────────────────────────────────────
-
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const token = searchParams.get("token") ?? "";
@@ -62,13 +46,13 @@ export default function ResetPasswordPage() {
         register,
         handleSubmit,
         formState: { errors },
-    } = useForm<ResetSchemaType>({
-        resolver: standardSchemaResolver(resetSchema),
+    } = useForm<ResetPasswordSchemaType>({
+        resolver: standardSchemaResolver(resetPasswordSchema),
         mode: "onBlur",
     });
 
     const onSubmit = useCallback(
-        async ({ newPassword }: ResetSchemaType) => {
+        async ({ newPassword }: ResetPasswordSchemaType) => {
             if (!token) {
                 setServerError(
                     "Missing reset token. Please request a new link.",
@@ -116,7 +100,9 @@ export default function ResetPasswordPage() {
                         <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
                             <Briefcase className="w-4 h-4 text-primary-foreground" />
                         </div>
-                        <span className="font-bold text-foreground">Zevlance</span>
+                        <span className="font-bold text-foreground">
+                            Zevlance
+                        </span>
                     </div>
 
                     {success ? (
@@ -262,5 +248,13 @@ export default function ResetPasswordPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function ResetPasswordPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center text-muted-foreground">Loading...</div>}>
+            <ResetPasswordContent />
+        </Suspense>
     );
 }

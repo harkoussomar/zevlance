@@ -4,14 +4,22 @@ import com.freelancehub.freelancehub.contract.domain.Contract;
 import com.freelancehub.freelancehub.contract.domain.ContractStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
+import jakarta.persistence.LockModeType;
 
 public interface ContractRepository extends JpaRepository<Contract, String> {
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT c FROM Contract c WHERE c.id = :id")
+    Optional<Contract> findByIdForUpdate(@Param("id") String id);
 
     // ─── Both parties ──────────────────────────────────────────────────────────
 
@@ -130,4 +138,21 @@ public interface ContractRepository extends JpaRepository<Contract, String> {
     // ─── Admin ─────────────────────────────────────────────────────────────────
 
     long countByStatus(ContractStatus status);
+
+    @Query("SELECT COUNT(c) FROM Contract c WHERE c.bid.project.client.id = :clientId")
+    long countByClientId(@Param("clientId") String clientId);
+
+    @Query("SELECT COUNT(c) FROM Contract c WHERE c.bid.freelancer.id = :freelancerId")
+    long countByFreelancerId(@Param("freelancerId") String freelancerId);
+
+    @EntityGraph(attributePaths = {"bid", "bid.freelancer"})
+    @Query("""
+        SELECT c FROM Contract c
+        WHERE c.bid.project.id = :projectId
+        ORDER BY c.startDate DESC
+        LIMIT 1
+        """)
+    java.util.Optional<Contract> findLatestByProjectId(
+            @Param("projectId") String projectId
+    );
 }

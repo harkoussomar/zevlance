@@ -20,7 +20,7 @@ export const addMilestoneSchema = z.object({
     .optional()
     .or(z.literal("")),
 
-  amount: z.coerce
+  amount: z
     .number({ message: "Enter a valid amount" })
     .positive("Amount must be greater than 0")
     .max(1_000_000, "Amount too large"),

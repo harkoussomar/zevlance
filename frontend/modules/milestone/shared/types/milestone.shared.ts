@@ -7,6 +7,8 @@ export type MilestoneStatus =
   | "DISPUTED"
   | "REFUNDED";
 
+export type RefundStatus = "NONE" | "PENDING" | "SUCCEEDED" | "FAILED";
+
 export interface MilestoneResponse {
   id: string;
   contractId: string;
@@ -21,4 +23,5 @@ export interface MilestoneResponse {
   fundedAt: string | null;
   releasedAt: string | null;
   revisionCount: number;
+  refundStatus: RefundStatus;
 }

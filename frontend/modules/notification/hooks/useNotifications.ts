@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { notificationService } from '../services/notification.service';
+import { notificationService } from '../api/notification.api';
 
 export const NOTIFICATIONS_KEY = ['notifications'] as const;
 export const UNREAD_COUNT_KEY  = ['notifications', 'unread-count'] as const;

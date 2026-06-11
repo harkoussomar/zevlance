@@ -6,8 +6,6 @@ import { SignupStep } from "../types";
 import { Button } from "@/modules/shared/components/button";
 import { ROLE_OPTIONS } from "../config/role-options";
 
-
-
 export const RoleSelector = ({
     selectedRole,
     setSelectedRole,

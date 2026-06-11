@@ -7,7 +7,6 @@ export {
   useMarkAsRead,
   useMarkAllAsRead,
 } from './hooks/useNotifications';
-export { notificationService }  from './services/notification.service';
 export type {
   Notification,
   NotificationType,

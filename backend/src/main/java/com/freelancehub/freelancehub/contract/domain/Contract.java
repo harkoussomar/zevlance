@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UuidGenerator;
+import jakarta.persistence.Version;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -26,6 +27,9 @@ public class Contract {
     @UuidGenerator
     @Column(length = 36)
     private String id;
+
+    @Version
+    private Long version;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "bid_id", nullable = false, unique = true)

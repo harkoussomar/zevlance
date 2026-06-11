@@ -2,12 +2,12 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { reviewKeys } from "./review.keys";
-import { getClientReviews } from "../services/review.service";
+import { getClientReviews } from "../api/review.api";
 
 export function useClientReviews(clientId: string) {
-  return useQuery({
-    queryKey: reviewKeys.client(clientId),
-    queryFn:  () => getClientReviews(clientId),
-    enabled:  Boolean(clientId),
-  });
+    return useQuery({
+        queryKey: reviewKeys.client(clientId),
+        queryFn: () => getClientReviews(clientId),
+        enabled: Boolean(clientId),
+    });
 }

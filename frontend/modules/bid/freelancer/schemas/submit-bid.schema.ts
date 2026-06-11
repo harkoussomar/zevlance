@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const createBidSchema = z.object({
-    proposedPrice: z.coerce
+    proposedPrice: z
         .number({ message: "Enter a valid price" })
         .positive("Price must be greater than 0")
         .max(1_000_000, "Price cannot exceed $1,000,000"),
@@ -11,7 +11,7 @@ export const createBidSchema = z.object({
         .min(50, "Cover letter must be at least 50 characters")
         .max(2000, "Cover letter must not exceed 2000 characters"),
 
-    estimatedDays: z.coerce
+    estimatedDays: z
         .number({ message: "Enter a valid number of days" })
         .int("Must be a whole number")
         .positive("Must be at least 1 day")

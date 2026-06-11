@@ -19,6 +19,7 @@ import { useContractMilestones } from "@/modules/milestone/shared";
 import { ClientContractHeaderActions } from "./ClientContractHeaderActions";
 import { ClientContractMilestones } from "./ClientContractMilestones";
 import { ContractReview } from "@/modules/review";
+import { DisputeFrozenBanner } from "@/modules/dispute/components/DisputeFrozenBanner";
 
 interface ClientContractDetailPageProps {
     contractId: string;
@@ -50,25 +51,28 @@ export function ClientContractDetailPage({
         isPending: contractPending,
         isError: contractError,
     } = useContract(contractId);
-    
+
     const {
         data: milestones = [],
         isPending: milestonesPending,
         isError: milestonesError,
     } = useContractMilestones(contractId);
 
-    // ─── Top Level Error Handling ──────────────────────────────────────────────
+    // ─── Guard Returns ─────────────────────────────────────────────────────────
     if (contractPending) return <SkeletonCard />;
-    
+
     if (contractError || !contract) {
         return (
-            <div className="pt-12">
+            <div className="pt-8 px-4">
                 <EmptyState
                     preset="error"
                     title="Failed to load contract"
                     description="There was a problem retrieving this contract. Please check your connection or try again."
                     action={
-                        <Button variant="outline" onClick={() => window.location.reload()}>
+                        <Button
+                            variant="outline"
+                            onClick={() => window.location.reload()}
+                        >
                             <RefreshCcw className="w-4 h-4 mr-2" />
                             Refresh Page
                         </Button>
@@ -80,14 +84,18 @@ export function ClientContractDetailPage({
 
     const isActive = contract.status === "ACTIVE";
     const isCompleted = contract.status === "COMPLETED";
+    const isDisputed = contract.status === "DISPUTED";
 
+    // ─── Main Render ───────────────────────────────────────────────────────────
     return (
-        <div className="space-y-6">
+        <div className="space-y-4 md:space-y-6">
+            {/* Back navigation */}
             <Link
                 href="/client/contracts"
-                className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors min-h-[44px] -ml-1 px-1 rounded-md hover:bg-muted/40"
             >
-                <ArrowLeft className="w-4 h-4" /> All Contracts
+                <ArrowLeft className="w-4 h-4 shrink-0" />
+                <span>All Contracts</span>
             </Link>
 
             <PageHeader
@@ -97,15 +105,30 @@ export function ClientContractDetailPage({
                         #{contract.id.slice(0, 8).toUpperCase()}
                     </span>
                 }
-                action={isActive && <ClientContractHeaderActions contractId={contractId} />}
+                // Header actions hidden when disputed — banner replaces them
+                action={
+                    isActive && !isDisputed ? (
+                        <ClientContractHeaderActions
+                            contractId={contractId}
+                            milestones={milestones}
+                        />
+                    ) : undefined
+                }
             />
 
-            <div className="grid lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 space-y-5">
-                    {/* Milestones Component now handles its own error/loading states */}
+            {isDisputed && (
+                <DisputeFrozenBanner
+                    contractId={contractId}
+                />
+            )}
+
+            <div className="grid gap-4 md:gap-6 md:grid-cols-3">
+                {/* ── Primary content ─────────────────────────────────────── */}
+                <div className="md:col-span-2 space-y-4 md:space-y-5">
                     <ClientContractMilestones
                         contractId={contractId}
-                        isActive={isActive}
+                        // Milestones are read-only when disputed
+                        isActive={isActive && !isDisputed}
                         contract={contract}
                         milestones={milestones}
                         isPending={milestonesPending}
@@ -120,9 +143,9 @@ export function ClientContractDetailPage({
                     )}
                 </div>
 
+                {/* ── Sidebar ─────────────────────────────────────────────── */}
                 <ContractSidebar
                     contract={contract}
-                    milestones={milestones}
                     perspective="client"
                 />
             </div>

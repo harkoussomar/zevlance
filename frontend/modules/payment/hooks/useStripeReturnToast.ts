@@ -14,7 +14,7 @@
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import type { StripeReturnIntent } from "@/app/(dashboard)/settings/page";
+import type { StripeReturnIntent } from "@/modules/settings/shared";
 
 const MESSAGES: Record<StripeReturnIntent, { fn: typeof toast.success; text: string }> = {
   success: { fn: toast.success, text: "Your Stripe account is connected!" },

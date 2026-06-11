@@ -32,6 +32,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
+        System.out.println("====== [JWT FILTER] Request URI: " + request.getRequestURI());
 
         String jwt = null;
 

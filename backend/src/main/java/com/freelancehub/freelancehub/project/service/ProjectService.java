@@ -119,7 +119,7 @@ public class ProjectService {
         }
     }
 
-    private ProjectSummaryResponse toSummary(Project p) {
+    public ProjectSummaryResponse toSummary(Project p) {
         return new ProjectSummaryResponse(
                 p.getId(),
                 p.getTitle(),
@@ -132,7 +132,10 @@ public class ProjectService {
                 p.getClient().getId(),
                 p.getClient().getName(),
                 p.getBids().size(),
-                p.getCreatedAt()
+                p.isFlagged(),
+                p.isFeatured(),
+                p.getCreatedAt(),
+                p.getUpdatedAt()
         );
     }
 
@@ -157,10 +160,8 @@ public class ProjectService {
     }
 
     @Transactional
-    public void adminDeleteProject(String projectId) {
-        if (!projectRepository.existsById(projectId)) {
-            throw new NotFoundException("Project not found: " + projectId);
-        }
-        projectRepository.deleteById(projectId);
+    public void adminDeleteProject(String projectId, String reason) {
+        Project project = findProjectById(projectId);
+        project.setDeletedAt(java.time.LocalDateTime.now());
     }
 }

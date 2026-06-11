@@ -1,6 +1,6 @@
 import { selectIsAuthenticated, useAuthStore } from "@/store/auth-store";
 import { useQuery } from "@tanstack/react-query";
-import { getMyBasicProfile } from "../services/profile.shared.service";
+import { getMyBasicProfile } from "../api/profile.shared.api";
 import { profileKeys } from "./profile.keys";
 
 /**

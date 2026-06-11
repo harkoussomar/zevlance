@@ -12,10 +12,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 
 @Service
@@ -26,7 +23,7 @@ public class JwtService {
 
     @PostConstruct
     public void validateSecret() {
-        byte[] keyBytes = Decoders.BASE64.decode(jwtProperties.getSecret());
+        byte[] keyBytes = decodeSecret();
         if (keyBytes.length < 32) {
             throw new IllegalStateException(
                     "jwt.secret must decode to at least 32 bytes (256 bits) for HS256. " +
@@ -78,6 +75,10 @@ public class JwtService {
         return claimsResolver.apply(extractAllClaims(token));
     }
 
+    private byte[] decodeSecret() {
+        return HexFormat.of().parseHex(jwtProperties.getSecret());
+    }
+
     private Claims extractAllClaims(String token) {
         return Jwts.parser()
                 .verifyWith(getSigningKey())
@@ -87,7 +88,7 @@ public class JwtService {
     }
 
     private SecretKey getSigningKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(jwtProperties.getSecret());
+        byte[] keyBytes = decodeSecret();
         return Keys.hmacShaKeyFor(keyBytes);
     }
 }

@@ -2,6 +2,7 @@ package com.freelancehub.freelancehub.payment.service;
 
 import com.freelancehub.freelancehub.contract.domain.Milestone;
 import com.freelancehub.freelancehub.contract.domain.MilestoneStatus;
+import com.freelancehub.freelancehub.contract.domain.ContractStatus;
 import com.freelancehub.freelancehub.contract.repository.MilestoneRepository;
 import com.freelancehub.freelancehub.exception.NotFoundException;
 import com.freelancehub.freelancehub.exception.UnauthorizedException;
@@ -9,7 +10,7 @@ import com.freelancehub.freelancehub.notification.domain.NotificationType;
 import com.freelancehub.freelancehub.notification.domain.ReferenceType;
 import com.freelancehub.freelancehub.notification.service.EmailTemplates;
 import com.freelancehub.freelancehub.notification.service.NotificationService;
-import com.freelancehub.freelancehub.payment.domain.StripeEventLog;
+import com.freelancehub.freelancehub.payment.domain.RefundStatus;
 import com.freelancehub.freelancehub.payment.dto.CheckoutSessionResponse;
 import com.freelancehub.freelancehub.payment.repository.StripeEventLogRepository;
 import com.stripe.exception.StripeException;
@@ -17,20 +18,20 @@ import com.stripe.model.PaymentIntent;
 import com.stripe.model.Refund;
 import com.stripe.model.Transfer;
 import com.stripe.model.checkout.Session;
+import com.stripe.net.RequestOptions;
 import com.stripe.param.RefundCreateParams;
 import com.stripe.param.TransferCreateParams;
 import com.stripe.param.checkout.SessionCreateParams;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 @Slf4j
@@ -40,11 +41,7 @@ public class PaymentService {
 
     private final MilestoneRepository milestoneRepository;
     private final StripeEventLogRepository eventLogRepository;
-
     private final NotificationService notificationService;
-
-
-
 
     @Value("${app.frontend-url}")
     private String frontendUrl;
@@ -52,20 +49,11 @@ public class PaymentService {
     @Value("${stripe.platform-fee-percent:10.0}")
     private double platformFeePercent;
 
-
     // ── Fund milestone: create Stripe Checkout Session ────────────────────────
-    //
-    //  Flow:
-    //    1. Validate milestone is PENDING and freelancer has Stripe account
-    //    2. Calculate fee breakdown upfront — stored on milestone so we know
-    //       exactly what to transfer on approval (avoids rounding surprises)
-    //    3. Create Stripe Checkout Session (hosted page, handles 3DS/Apple Pay)
-    //    4. Persist sessionId to milestone for webhook lookup
-    //    5. Return checkoutUrl → frontend redirects the user
 
     @Transactional
     public CheckoutSessionResponse fundMilestone(String milestoneId, String clientId, String clientEmail) {
-        Milestone milestone = findById(milestoneId);
+        Milestone milestone = findByIdForUpdate(milestoneId);
 
         String contractClientId = milestone.getContract().getBid()
                 .getProject().getClient().getId();
@@ -79,10 +67,19 @@ public class PaymentService {
             );
         }
 
+        assertActiveContract(milestone);
+
+        if (milestone.getStripeCheckoutSessionId() != null) {
+            throw new IllegalStateException(
+                    "A payment session already exists for this milestone. Complete or cancel it before trying again."
+            );
+        }
+
         String freelancerStripeId = milestone.getContract().getBid()
                 .getFreelancer().getStripeAccountId();
 
-        if (freelancerStripeId == null || freelancerStripeId.isBlank()) {
+        if (freelancerStripeId == null || freelancerStripeId.isBlank()
+                || !milestone.getContract().getBid().getFreelancer().isStripeOnboarded()) {
             throw new IllegalStateException(
                     "The freelancer has not connected their Stripe account yet. " +
                             "Please ask them to complete onboarding before funding this milestone."
@@ -100,6 +97,7 @@ public class PaymentService {
         try {
             SessionCreateParams params = SessionCreateParams.builder()
                     .setMode(SessionCreateParams.Mode.PAYMENT)
+                    .setExpiresAt(Instant.now().plusSeconds(30 * 60).getEpochSecond())
                     .setCustomerEmail(clientEmail)
                     .setSuccessUrl(frontendUrl + "/client/contracts/" + contractId + "?funded=true&ms=" + milestoneId)
                     .setCancelUrl(frontendUrl  + "/client/contracts/" + contractId + "?funded=false")
@@ -114,17 +112,16 @@ public class PaymentService {
                                             .build())
                                     .build())
                             .build())
-                    // Metadata lets the webhook handler find the milestone without
-                    // exposing internal DB IDs in the URL.
                     .putMetadata("milestoneId",  milestoneId)
                     .putMetadata("contractId",   contractId)
                     .putMetadata("freelancerStripeId", freelancerStripeId)
                     .build();
 
-            Session session = Session.create(params);
+            RequestOptions options = RequestOptions.builder()
+                    .setIdempotencyKey("checkout_ms_" + milestoneId + "_v" + milestone.getVersion())
+                    .build();
+            Session session = Session.create(params, options);
 
-            // Persist fee breakdown and session ID immediately — the webhook
-            // will use the session ID to find this milestone.
             milestone.setStripeCheckoutSessionId(session.getId());
             milestone.setPlatformFeeAmount(fee);
             milestone.setFreelancerPayout(payout);
@@ -140,17 +137,34 @@ public class PaymentService {
     }
 
     // ── Handle webhook: checkout.session.completed ────────────────────────────
-    //
-    //  Called by StripeWebhookController after event signature is verified.
-    //  Marks the milestone FUNDED and persists the PaymentIntent ID.
 
     @Transactional
-    public void handleCheckoutCompleted(String sessionId, String paymentIntentId) {
+    public void handleCheckoutCompleted(
+            String sessionId,
+            String paymentIntentId,
+            String paymentStatus,
+            Long amountTotal,
+            String currency
+    ) {
         Milestone milestone = milestoneRepository
                 .findByStripeCheckoutSessionId(sessionId)
                 .orElseThrow(() -> new NotFoundException(
                         "No milestone found for Stripe session: " + sessionId
                 ));
+
+        if (!"paid".equals(paymentStatus)) {
+            log.info("Checkout session {} completed without confirmed payment; awaiting payment success", sessionId);
+            return;
+        }
+
+        if (amountTotal == null || amountTotal != toCents(milestone.getAmount())
+                || !"usd".equalsIgnoreCase(currency)) {
+            throw new IllegalStateException("Stripe payment amount or currency does not match the milestone");
+        }
+
+        if (paymentIntentId == null || paymentIntentId.isBlank()) {
+            throw new IllegalStateException("Paid Stripe checkout session has no PaymentIntent");
+        }
 
         if (milestone.getStatus() != MilestoneStatus.PENDING) {
             log.warn("Milestone {} already past PENDING when checkout.completed fired", milestone.getId());
@@ -187,14 +201,29 @@ public class PaymentService {
 
         log.info("Milestone {} FUNDED via session {}", milestone.getId(), sessionId);
     }
+
+    @Transactional
+    public void handleCheckoutExpired(String sessionId) {
+        milestoneRepository.findByStripeCheckoutSessionId(sessionId).ifPresent(milestone -> {
+            if (milestone.getStatus() == MilestoneStatus.PENDING) {
+                milestone.setStripeCheckoutSessionId(null);
+                milestoneRepository.save(milestone);
+            }
+        });
+    }
+
     // ── Release payment: APPROVED → transfer to freelancer ───────────────────
-    //
-    //  Called by MilestoneService.approveMilestone after status is set APPROVED.
-    //  Creates a Stripe Transfer from the platform account to the freelancer's
-    //  connected Express account.
 
     @Transactional
     public void releasePayment(Milestone milestone) {
+        assertActiveOrDisputedContract(milestone);
+        if (milestone.getStripeTransferId() != null) {
+            return;
+        }
+        if (milestone.getStripePaymentIntentId() == null) {
+            throw new IllegalStateException("Cannot release payment without a confirmed PaymentIntent");
+        }
+
         String stripeAccountId = milestone.getContract().getBid()
                 .getFreelancer().getStripeAccountId();
 
@@ -213,8 +242,16 @@ public class PaymentService {
                     .putMetadata("contractId",  milestone.getContract().getId())
                     .build();
 
-            Transfer transfer = Transfer.create(params);
+            // ✅ SECURITY FIX: Idempotency Key
+            // If the database rolls back after this Stripe call, Stripe will remember
+            // this key and prevent double-paying if the action is retried.
+            RequestOptions options = RequestOptions.builder()
+                    .setIdempotencyKey("release_ms_" + milestone.getId())
+                    .build();
 
+            Transfer transfer = Transfer.create(params, options);
+
+            milestone.setStripeTransferId(transfer.getId());
             milestone.setReleasedAt(LocalDateTime.now());
             milestoneRepository.save(milestone);
 
@@ -228,43 +265,40 @@ public class PaymentService {
     }
 
     // ── Refund payment: return funds to client ────────────────────────────────
-    //
-    //  Called on: contract cancellation (if milestone is FUNDED/SUBMITTED/DISPUTED)
-    //  Creates a Stripe Refund against the original PaymentIntent.
 
     @Transactional
     public void refundPayment(Milestone milestone) {
         if (milestone.getStripePaymentIntentId() == null) {
-            log.warn("Refund skipped for milestone {} — no PaymentIntent on record", milestone.getId());
-            return;
+            throw new IllegalStateException("Cannot refund a funded milestone without a confirmed PaymentIntent");
+        }
+        if (milestone.getStripeRefundId() != null) {
+            throw new IllegalStateException("A refund has already been initiated for this milestone");
+        }
+        if (milestone.getStripeTransferId() != null) {
+            throw new IllegalStateException("Cannot refund a milestone after its payout was released");
         }
 
         try {
             RefundCreateParams params = RefundCreateParams.builder()
                     .setPaymentIntent(milestone.getStripePaymentIntentId())
                     .putMetadata("milestoneId", milestone.getId())
-                    .putMetadata("reason", "contract_cancelled")
+                    .putMetadata("reason", "contract_cancelled_or_refunded")
                     .build();
 
-            Refund.create(params);
+            // ✅ SECURITY FIX: Idempotency Key
+            // Ensures we never double-refund the client if a network timeout occurs.
+            RequestOptions options = RequestOptions.builder()
+                    .setIdempotencyKey("refund_ms_" + milestone.getId())
+                    .build();
 
-            milestone.setStatus(MilestoneStatus.REFUNDED);
-
-            String clientId = milestone.getContract().getBid().getProject().getClient().getId();
-            notificationService.notifyWithEmail(
-                    clientId, NotificationType.PAYMENT_REFUNDED,
-                    "Refund processed",
-                    "Payment for \"" + milestone.getTitle() + "\" has been refunded.",
-                    milestone.getId(), ReferenceType.MILESTONE,  // ✅ enum instead of string
-                    "Refund processed",
-                    EmailTemplates.paymentRefunded(
-                            milestone.getContract().getBid().getProject().getClient().getName(),
-                            milestone.getTitle(),
-                            frontendUrl + "/client/contracts/" + milestone.getContract().getId()
-                    )
-            );
-
+            Refund refund = Refund.create(params, options);
+            milestone.setStripeRefundId(refund.getId());
+            applyRefundStatus(milestone, refund.getStatus());
             milestoneRepository.save(milestone);
+
+            if (milestone.getRefundStatus() == RefundStatus.SUCCEEDED) {
+                notifyRefundSucceeded(milestone);
+            }
 
             log.info("Refunded milestone {} (PaymentIntent {})", milestone.getId(),
                     milestone.getStripePaymentIntentId());
@@ -275,16 +309,28 @@ public class PaymentService {
         }
     }
 
+    @Transactional
+    public void handleRefundUpdated(String refundId, String status) {
+        Milestone milestone = milestoneRepository.findByStripeRefundId(refundId)
+                .orElseThrow(() -> new NotFoundException("No milestone found for Stripe refund: " + refundId));
+        RefundStatus previous = milestone.getRefundStatus();
+        applyRefundStatus(milestone, status);
+        milestoneRepository.save(milestone);
+        if (previous != RefundStatus.SUCCEEDED && milestone.getRefundStatus() == RefundStatus.SUCCEEDED) {
+            notifyRefundSucceeded(milestone);
+        }
+    }
+
     // ── Refund all funded milestones for a contract ────────────────────────────
-    //
-    //  Called when a contract is cancelled. Only refunds milestones that have
-    //  been funded but not yet approved (money still in escrow).
 
     @Transactional
     public void refundAllFundedMilestones(String contractId) {
         List<Milestone> milestones = milestoneRepository.findByContractId(contractId);
 
         for (Milestone m : milestones) {
+            // Note: ContractService.cancelContract already strictly prevents this method
+            // from running if any milestone is SUBMITTED, REVISION_REQUESTED, or DISPUTED.
+            // This is just a secondary safety net.
             boolean refundable = m.getStatus() == MilestoneStatus.FUNDED
                     || m.getStatus() == MilestoneStatus.SUBMITTED
                     || m.getStatus() == MilestoneStatus.REVISION_REQUESTED
@@ -295,7 +341,6 @@ public class PaymentService {
             }
         }
     }
-
 
     @Transactional(readOnly = true)
     public Milestone findAndAssertClient(String milestoneId, String clientId) {
@@ -311,24 +356,17 @@ public class PaymentService {
                             "Use dispute for submitted milestones."
             );
         }
+        assertActiveContract(milestone);
         return milestone;
     }
 
-    // ── Idempotency check ─────────────────────────────────────────────────────
+    // ── Idempotency check for Webhooks ────────────────────────────────────────
 
     @Transactional
     public boolean tryClaimEvent(String eventId, String eventType) {
-        try {
-            StripeEventLog entry = new StripeEventLog(eventId, eventType);
-            entry.setProcessed(false);
-            eventLogRepository.saveAndFlush(entry);
-            return true;  // we inserted first — we own this event
-        } catch (DataIntegrityViolationException e) {
-            return false; // another thread already inserted — skip
-        }
+        return eventLogRepository.insertClaim(eventId, eventType) == 1;
     }
 
-    // And a separate method to mark it done after processing succeeds:
     @Transactional
     public void markEventProcessed(String eventId) {
         eventLogRepository.findById(eventId).ifPresent(entry -> {
@@ -337,11 +375,61 @@ public class PaymentService {
         });
     }
 
+    @Transactional
+    public void releaseEventClaim(String eventId) {
+        eventLogRepository.deleteById(eventId);
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private Milestone findById(String id) {
         return milestoneRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Milestone not found: " + id));
+    }
+
+    private Milestone findByIdForUpdate(String id) {
+        return milestoneRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new NotFoundException("Milestone not found: " + id));
+    }
+
+    private void assertActiveContract(Milestone milestone) {
+        if (milestone.getContract().getStatus() != ContractStatus.ACTIVE) {
+            throw new IllegalStateException("Payment actions are only allowed on ACTIVE contracts");
+        }
+    }
+
+    private void assertActiveOrDisputedContract(Milestone milestone) {
+        ContractStatus status = milestone.getContract().getStatus();
+        if (status != ContractStatus.ACTIVE && status != ContractStatus.DISPUTED) {
+            throw new IllegalStateException("Payment release is only allowed on ACTIVE or DISPUTED contracts");
+        }
+    }
+
+    private void applyRefundStatus(Milestone milestone, String stripeStatus) {
+        if ("succeeded".equals(stripeStatus)) {
+            milestone.setRefundStatus(RefundStatus.SUCCEEDED);
+            milestone.setStatus(MilestoneStatus.REFUNDED);
+        } else if ("failed".equals(stripeStatus) || "canceled".equals(stripeStatus)) {
+            milestone.setRefundStatus(RefundStatus.FAILED);
+        } else {
+            milestone.setRefundStatus(RefundStatus.PENDING);
+        }
+    }
+
+    private void notifyRefundSucceeded(Milestone milestone) {
+        String clientId = milestone.getContract().getBid().getProject().getClient().getId();
+        notificationService.notifyWithEmail(
+                clientId, NotificationType.PAYMENT_REFUNDED,
+                "Refund processed",
+                "Payment for \"" + milestone.getTitle() + "\" has been refunded.",
+                milestone.getId(), ReferenceType.MILESTONE,
+                "Refund processed",
+                EmailTemplates.paymentRefunded(
+                        milestone.getContract().getBid().getProject().getClient().getName(),
+                        milestone.getTitle(),
+                        frontendUrl + "/client/contracts/" + milestone.getContract().getId()
+                )
+        );
     }
 
     private static long toCents(BigDecimal amount) {

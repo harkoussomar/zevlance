@@ -18,7 +18,7 @@ import {
     CardTitle,
 } from "@/modules/shared/components/card";
 
-import { ServerFetchError } from "@/modules/shared/lib/server-fetch";
+import { ServerFetchError } from "@/modules/shared/lib/bff/server-fetch";
 import {
     ProfileHero,
     ProfileStatCard,
@@ -26,11 +26,9 @@ import {
 } from "../../shared";
 
 import type { FreelancerProfileResponse } from "../types/profile.freelancer";
-import { getMyFreelancerProfileServer } from "../services/profile.freelancer.server";
-import {
-    getFreelancerProfileServer,
-    getFreelancerReviewsServer,
-} from "../../public/services/profile.public.server";
+import { getMyFreelancerProfileServer } from "../api/profile.freelancer.server.api";
+import { getFreelancerProfileServer } from "../../public/api/profile.public.server.api";
+import { getFreelancerReviewsServer } from "@/modules/review/server/review.server";
 import type { ReviewResponse } from "@/modules/review";
 
 // ─── Props ────────────────────────────────────────────────────────────────────

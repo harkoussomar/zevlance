@@ -1,6 +1,7 @@
 package com.freelancehub.freelancehub.contract.dto;
 
 import com.freelancehub.freelancehub.contract.domain.MilestoneStatus;
+import com.freelancehub.freelancehub.payment.domain.RefundStatus;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -20,5 +21,6 @@ public record MilestoneResponse(
         BigDecimal freelancerPayout,
         LocalDateTime fundedAt,
         LocalDateTime releasedAt,
-        int revisionCount
+        int revisionCount,
+        RefundStatus refundStatus
 ) {}

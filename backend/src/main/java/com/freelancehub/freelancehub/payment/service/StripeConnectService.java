@@ -7,6 +7,7 @@ import com.freelancehub.freelancehub.exception.NotFoundException;
 import com.stripe.exception.StripeException;
 import com.stripe.model.Account;
 import com.stripe.model.AccountLink;
+import com.stripe.net.RequestOptions;
 import com.stripe.param.AccountCreateParams;
 import com.stripe.param.AccountLinkCreateParams;
 import lombok.RequiredArgsConstructor;
@@ -45,7 +46,10 @@ public class StripeConnectService {
                         .putMetadata("freelancerId", freelancerId)
                         .build();
 
-                Account account = Account.create(params);
+                RequestOptions options = RequestOptions.builder()
+                        .setIdempotencyKey("connect_account_" + freelancerId)
+                        .build();
+                Account account = Account.create(params, options);
                 accountId = account.getId();
 
                 freelancer.setStripeAccountId(accountId);
@@ -72,11 +76,11 @@ public class StripeConnectService {
     // ── Mark onboarded (called by webhook) ───────────────────────────────────
 
     @Transactional
-    public void markOnboarded(String stripeAccountId) {
+    public void updateOnboardingStatus(String stripeAccountId, boolean onboarded) {
         freelancerRepository.findByStripeAccountId(stripeAccountId).ifPresent(f -> {
-            f.setStripeOnboarded(true);
+            f.setStripeOnboarded(onboarded);
             freelancerRepository.save(f);
-            log.info("Freelancer {} marked as Stripe onboarded (via webhook)", f.getId());
+            log.info("Freelancer {} Stripe onboarding status changed to {}", f.getId(), onboarded);
         });
     }
 
@@ -92,9 +96,6 @@ public class StripeConnectService {
         Freelancer freelancer = freelancerRepository.findById(freelancerId)
                 .orElseThrow(() -> new NotFoundException("Freelancer not found: " + freelancerId));
 
-        // Fast path — DB flag already set
-        if (freelancer.isStripeOnboarded()) return true;
-
         // No Stripe account created yet
         String accountId = freelancer.getStripeAccountId();
         if (accountId == null) return false;
@@ -105,11 +106,10 @@ public class StripeConnectService {
             boolean verified = Boolean.TRUE.equals(account.getChargesEnabled())
                     && Boolean.TRUE.equals(account.getPayoutsEnabled());
 
-            if (verified) {
-                // Self-heal: write flag so the next call takes the fast path
-                freelancer.setStripeOnboarded(true);
+            if (freelancer.isStripeOnboarded() != verified) {
+                freelancer.setStripeOnboarded(verified);
                 freelancerRepository.save(freelancer);
-                log.info("Self-healed Stripe onboarding flag for freelancer {} (account {})",
+                log.info("Reconciled Stripe onboarding flag for freelancer {} (account {})",
                         freelancerId, accountId);
             }
 

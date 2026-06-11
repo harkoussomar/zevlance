@@ -6,7 +6,7 @@ import {
     GitBranch,
     Shield,
     Users,
-    BarChart3,
+    ClipboardList,
 } from "lucide-react";
 import type { Role } from "@/modules/shared/types";
 import { NavItem } from "../types";
@@ -62,6 +62,13 @@ export const NAV_ITEMS: NavItem[] = [
 
     // ── ADMIN ────────────────────────────────────────────────────────────────
     {
+        label: "Overview",
+        href: "/admin",
+        icon: <LayoutDashboard className="w-4 h-4" />,
+        roles: ["ADMIN"],
+        exact: true,
+    },
+    {
         label: "All Users",
         href: "/admin/users",
         icon: <Users className="w-4 h-4" />,
@@ -74,9 +81,9 @@ export const NAV_ITEMS: NavItem[] = [
         roles: ["ADMIN"],
     },
     {
-        label: "Platform Stats",
-        href: "/admin/stats",
-        icon: <BarChart3 className="w-4 h-4" />,
+        label: "Audit Log",
+        href: "/admin/audit-log",
+        icon: <ClipboardList className="w-4 h-4" />,
         roles: ["ADMIN"],
     },
 ];

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect,useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { X, Menu, ArrowRight, LayoutDashboard, LogOut } from "lucide-react";
@@ -97,7 +97,9 @@ function Hamburger({ isOpen, onToggle }: HamburgerProps) {
         <button
             type="button"
             onClick={onToggle}
-            aria-label={isOpen ? "Close navigation menu" : "Open navigation menu"}
+            aria-label={
+                isOpen ? "Close navigation menu" : "Open navigation menu"
+            }
             aria-expanded={isOpen}
             aria-controls="mobile-nav"
             className={cn(
@@ -111,13 +113,17 @@ function Hamburger({ isOpen, onToggle }: HamburgerProps) {
                 <Menu
                     className={cn(
                         "absolute inset-0 w-4 h-4 transition-all duration-200",
-                        isOpen ? "opacity-0 rotate-90 scale-75" : "opacity-100 rotate-0 scale-100",
+                        isOpen
+                            ? "opacity-0 rotate-90 scale-75"
+                            : "opacity-100 rotate-0 scale-100",
                     )}
                 />
                 <X
                     className={cn(
                         "absolute inset-0 w-4 h-4 transition-all duration-200",
-                        isOpen ? "opacity-100 rotate-0 scale-100" : "opacity-0 -rotate-90 scale-75",
+                        isOpen
+                            ? "opacity-100 rotate-0 scale-100"
+                            : "opacity-0 -rotate-90 scale-75",
                     )}
                 />
             </span>
@@ -220,7 +226,10 @@ function MobileAuthSection({ onClose }: { onClose: () => void }) {
             {/* Sign out */}
             <button
                 type="button"
-                onClick={() => { handleLogout(); onClose(); }}
+                onClick={() => {
+                    handleLogout();
+                    onClose();
+                }}
                 className={cn(
                     "w-full flex items-center gap-2 px-3 py-2.5 rounded-xl",
                     "text-sm font-medium text-muted-foreground",
@@ -246,100 +255,102 @@ interface MobileMenuProps {
 function MobileMenu({ isOpen, pathname, onClose }: MobileMenuProps) {
     useEffect(() => {
         document.body.style.overflow = isOpen ? "hidden" : "";
-        return () => { document.body.style.overflow = ""; };
+        return () => {
+            document.body.style.overflow = "";
+        };
     }, [isOpen]);
 
     return (
-             <nav
-                id="mobile-nav"
-                aria-hidden={!isOpen}
-                aria-label="Mobile navigation"
-                className={cn(
-                    "md:hidden fixed top-16 inset-x-0 z-[48]",
-                    "bg-background border-b border-border",
-                    "transition-all duration-[400ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
-                    isOpen
-                        ? "translate-y-0 opacity-100 pointer-events-auto"
-                        : "-translate-y-3 opacity-0 pointer-events-none",
-                )}
-            >
-                {/* Nav links */}
-                <div className="px-6 pt-7 pb-2">
-                    <p className="text-[10px] tracking-[0.2em] text-muted-foreground/40 font-mono uppercase mb-5">
-                        Navigation
-                    </p>
+        <nav
+            id="mobile-nav"
+            aria-hidden={!isOpen}
+            aria-label="Mobile navigation"
+            className={cn(
+                "md:hidden fixed top-16 inset-x-0 z-[48]",
+                "bg-background border-b border-border",
+                "transition-all duration-[400ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
+                isOpen
+                    ? "translate-y-0 opacity-100 pointer-events-auto"
+                    : "-translate-y-3 opacity-0 pointer-events-none",
+            )}
+        >
+            {/* Nav links */}
+            <div className="px-6 pt-7 pb-2">
+                <p className="text-[10px] tracking-[0.2em] text-muted-foreground/40 font-mono uppercase mb-5">
+                    Navigation
+                </p>
 
-                    <ul className="divide-y divide-border/50">
-                        {NAV_ITEMS.map((item, i) => {
-                            const isActive =
-                                pathname === item.href ||
-                                pathname.startsWith(`${item.href}/`);
+                <ul className="divide-y divide-border/50">
+                    {NAV_ITEMS.map((item, i) => {
+                        const isActive =
+                            pathname === item.href ||
+                            pathname.startsWith(`${item.href}/`);
 
-                            return (
-                                <li key={item.href}>
-                                    <Link
-                                        href={item.href}
-                                        onClick={onClose}
-                                        style={{
-                                            transitionDelay: isOpen
-                                                ? `${i * 40 + 50}ms`
-                                                : "0ms",
-                                        }}
+                        return (
+                            <li key={item.href}>
+                                <Link
+                                    href={item.href}
+                                    onClick={onClose}
+                                    style={{
+                                        transitionDelay: isOpen
+                                            ? `${i * 40 + 50}ms`
+                                            : "0ms",
+                                    }}
+                                    className={cn(
+                                        "flex items-center gap-3 py-4 group",
+                                        "transition-all duration-[380ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
+                                        isOpen
+                                            ? "translate-x-0 opacity-100"
+                                            : "-translate-x-4 opacity-0",
+                                    )}
+                                >
+                                    <span className="text-[10px] font-mono text-muted-foreground/30 w-6 shrink-0 pt-0.5 select-none">
+                                        {String(i + 1).padStart(2, "0")}
+                                    </span>
+
+                                    <span
                                         className={cn(
-                                            "flex items-center gap-3 py-4 group",
-                                            "transition-all duration-[380ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
-                                            isOpen
-                                                ? "translate-x-0 opacity-100"
-                                                : "-translate-x-4 opacity-0",
+                                            "text-[22px] font-light tracking-tight flex-1 transition-colors duration-200",
+                                            isActive
+                                                ? "text-foreground font-normal"
+                                                : "text-muted-foreground group-hover:text-foreground",
                                         )}
                                     >
-                                        <span className="text-[10px] font-mono text-muted-foreground/30 w-6 shrink-0 pt-0.5 select-none">
-                                            {String(i + 1).padStart(2, "0")}
-                                        </span>
+                                        {item.label}
+                                    </span>
 
-                                        <span
-                                            className={cn(
-                                                "text-[22px] font-light tracking-tight flex-1 transition-colors duration-200",
-                                                isActive
-                                                    ? "text-foreground font-normal"
-                                                    : "text-muted-foreground group-hover:text-foreground",
-                                            )}
-                                        >
-                                            {item.label}
-                                        </span>
+                                    {isActive && (
+                                        <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                                    )}
 
-                                        {isActive && (
-                                            <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
-                                        )}
+                                    <span className="text-muted-foreground/20 text-sm -translate-x-1 transition-all duration-200 group-hover:translate-x-0 group-hover:text-muted-foreground/60">
+                                        ›
+                                    </span>
+                                </Link>
+                            </li>
+                        );
+                    })}
+                </ul>
+            </div>
 
-                                        <span className="text-muted-foreground/20 text-sm -translate-x-1 transition-all duration-200 group-hover:translate-x-0 group-hover:text-muted-foreground/60">
-                                            ›
-                                        </span>
-                                    </Link>
-                                </li>
-                            );
-                        })}
-                    </ul>
-                </div>
-
-                {/* Auth section — purpose-built for mobile, not reusing AuthHeaderActions */}
-                <div
-                    style={{
-                        transitionDelay: isOpen
-                            ? `${NAV_ITEMS.length * 40 + 80}ms`
-                            : "0ms",
-                    }}
-                    className={cn(
-                        "px-6 pt-4 pb-7 border-t border-border/50",
-                        "transition-all duration-[380ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
-                        isOpen
-                            ? "translate-y-0 opacity-100"
-                            : "translate-y-3 opacity-0",
-                    )}
-                >
-                    <MobileAuthSection onClose={onClose} />
-                </div>
-            </nav>
+            {/* Auth section — purpose-built for mobile, not reusing AuthHeaderActions */}
+            <div
+                style={{
+                    transitionDelay: isOpen
+                        ? `${NAV_ITEMS.length * 40 + 80}ms`
+                        : "0ms",
+                }}
+                className={cn(
+                    "px-6 pt-4 pb-7 border-t border-border/50",
+                    "transition-all duration-[380ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
+                    isOpen
+                        ? "translate-y-0 opacity-100"
+                        : "translate-y-3 opacity-0",
+                )}
+            >
+                <MobileAuthSection onClose={onClose} />
+            </div>
+        </nav>
     );
 }
 
@@ -394,7 +405,11 @@ export function Navbar() {
             <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-6">
                 <Logo />
 
-                <div className="hidden md:flex items-center gap-8" role="navigation" aria-label="Main">
+                <div
+                    className="hidden md:flex items-center gap-8"
+                    role="navigation"
+                    aria-label="Main"
+                >
                     {NAV_ITEMS.map((item) => (
                         <DesktopNavLink
                             key={item.href}

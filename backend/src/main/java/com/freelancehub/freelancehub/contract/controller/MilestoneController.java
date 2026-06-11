@@ -72,4 +72,12 @@ public class MilestoneController {
     ) {
         return ResponseEntity.ok(milestoneService.requestRevision(id, currentUser.getId()));
     }
+
+    @PutMapping("/milestones/{id}/refund")
+    public ResponseEntity<MilestoneResponse> refundMilestone(
+            @PathVariable String id,
+            @AuthenticationPrincipal User currentUser
+    ) {
+        return ResponseEntity.ok(milestoneService.refundMilestone(id, currentUser.getId()));
+    }
 }

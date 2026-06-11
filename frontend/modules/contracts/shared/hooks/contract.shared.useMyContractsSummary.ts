@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { getMyContractsSummary } from "../services/contract.shared";
+import { getMyContractsSummary } from "../api/contract.shared.api";
 import { contractKeys } from "./contract.keys";
 
 export function useMyContractsSummary() {

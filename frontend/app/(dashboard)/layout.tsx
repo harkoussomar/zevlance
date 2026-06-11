@@ -16,8 +16,8 @@ export default function DashboardLayout({
       {/* Main area */}
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <Topbar />
-        <main className="flex-1 overflow-y-auto">
-          <div className="p-6 max-w-7xl mx-auto">
+        <main className="flex-1 overflow-y-auto w-full">
+          <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto w-full">
             {children}
           </div>
         </main>
