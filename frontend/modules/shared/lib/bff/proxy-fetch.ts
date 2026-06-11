@@ -16,15 +16,7 @@ export async function proxyToSpring(
   const url = `${BACKEND_BASE}${path.startsWith("/") ? path : `/${path}`}`;
   const method = options.method ?? "POST";
 
-  // --- NEW DETAILED DEBUGGING LOGIC ---
   const bffToken = process.env.INTERNAL_API_SECRET || "";
-  const maskedBffToken = bffToken.length > 4 
-    ? `${bffToken.substring(0, 2)}***${bffToken.substring(bffToken.length - 2)}` 
-    : (bffToken ? "***" : "EMPTY");
-
-  // --- DEV LOG 1: OUTGOING REQUEST ---
-  console.log(`\n[BFF 🌐] ➡️ Sending ${method} to: ${url}`);
-  console.log(`[BFF 🛡️] Next.js is sending token: '${maskedBffToken}' (length: ${bffToken.length})`);
 
   const cookieStore = await cookies();
   const cookieHeader = cookieStore
@@ -36,17 +28,13 @@ export async function proxyToSpring(
     method,
     headers: {
       "Content-Type": "application/json",
-      "X-Internal-Token": bffToken, // Using the variable we defined above
+      "X-Internal-Token": bffToken,
       ...(cookieHeader ? { Cookie: cookieHeader } : {}),
     },
     ...(options.body !== undefined
       ? { body: JSON.stringify(options.body) }
       : {}),
   });
-
-  // --- DEV LOG 2: SPRING BOOT RESPONSE ---
-  const isSuccess = res.status >= 200 && res.status < 300;
-  console.log(`[BFF 🌐] ${isSuccess ? "✅" : "❌"} Spring Boot returned Status: ${res.status}`);
 
   let data: unknown = null;
   const contentType = res.headers.get("content-type") ?? "";
@@ -58,11 +46,6 @@ export async function proxyToSpring(
     contentType.includes("application/json")
   ) {
     data = await res.json();
-    
-    // --- DEV LOG 3: THE ERROR BODY (IF APPLICABLE) ---
-    if (!isSuccess) {
-        console.log(`[BFF ⚠️] Error Payload from Spring:`, data);
-    }
   }
 
   const nextRes = NextResponse.json(data, { status: res.status });

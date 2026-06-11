@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback } from "react";
 import Link from "next/link";
 import { Briefcase, ArrowRight, ArrowLeft } from "lucide-react";
 import { useForm } from "react-hook-form";
@@ -28,15 +28,6 @@ export default function ForgotPasswordPage() {
     const [submitted, setSubmitted] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [serverError, setServerError] = useState<string | null>(null);
-    const abortRef = useRef<AbortController | null>(null);
-
-    useEffect(
-        () => () => {
-            abortRef.current?.abort();
-        },
-        [],
-    );
-
     const {
         register,
         handleSubmit,
@@ -47,17 +38,12 @@ export default function ForgotPasswordPage() {
     });
 
     const onSubmit = useCallback(async ({ email }: ForgotSchemaType) => {
-        abortRef.current?.abort();
-        const controller = new AbortController();
-        abortRef.current = controller;
-
         setIsLoading(true);
         setServerError(null);
 
         try {
-            await authService.forgotPassword(email, controller.signal);
+            await authService.forgotPassword(email);
         } catch (err) {
-            if ((err as Error).name === "AbortError") return;
             // Surface unexpected errors (network, 5xx) but never 404 leaks
             setServerError(parseApiError(err, {}));
         } finally {

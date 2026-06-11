@@ -38,9 +38,6 @@ export async function serverFetch<T>(
 
   const url = `${BACKEND_BASE}${path.startsWith("/") ? path : `/${path}`}`;
 
-  // Log outgoing internal fetch requests safely
-  console.log(`[BFF ⚙️] Internal serverFetch calling: ${url}`);
-
   const res = await fetch(url, {
     ...restOptions,
     headers: {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { AdminFilters } from "@/modules/admin/shared/components/AdminFilters";
 import { ProjectTable } from "@/modules/admin/projects/components/ProjectTable";
@@ -8,7 +8,7 @@ import { PageHeader } from "@/modules/shared/components/PageHeader";
 import type { AdminProjectFilter } from "@/modules/admin/projects/types/admin.projects.types";
 import { CATEGORY_LABELS, PROJECT_STATUSES } from "@/modules/admin/projects/types/admin.projects.types";
 
-export default function AdminProjectsPage() {
+function AdminProjectsContent() {
     const searchParams = useSearchParams();
     const [page, setPage] = useState(0);
     const [filters, setFilters] = useState<AdminProjectFilter>(() => ({
@@ -88,6 +88,14 @@ export default function AdminProjectsPage() {
                 />
             </div>
         </>
+    );
+}
+
+export default function AdminProjectsPage() {
+    return (
+        <Suspense>
+            <AdminProjectsContent />
+        </Suspense>
     );
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useCallback } from "react";
+import { useId, useState, useCallback } from "react";
 import { Upload, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { cn } from "@/modules/shared";
 import {
@@ -41,7 +41,7 @@ export function FileUploader({
     children,
     ...uploadOptions
 }: FileUploaderProps) {
-    const inputRef = useRef<HTMLInputElement>(null);
+    const inputId = useId();
     const [dragging, setDragging] = useState(false);
     const [validationError, setValidationError] = useState<string | null>(null);
 
@@ -51,13 +51,21 @@ export function FileUploader({
         stage,
     );
 
-    function validate(file: File): string | null {
-        if (!accept.includes(file.type))
-            return `Accepted formats: ${accept.map((a) => a.split("/")[1]).join(", ")}`;
-        if (file.size > maxBytes)
-            return `File must be under ${Math.round(maxBytes / 1024 / 1024)} MB`;
-        return null;
-    }
+    const validate = useCallback(
+        (file: File): string | null => {
+            if (!accept.includes(file.type))
+                return `Accepted formats: ${accept.map((a) => a.split("/")[1]).join(", ")}`;
+            if (file.size > maxBytes)
+                return `File must be under ${Math.round(maxBytes / 1024 / 1024)} MB`;
+            return null;
+        },
+        [accept, maxBytes],
+    );
+
+    const open = useCallback(
+        () => document.getElementById(inputId)?.click(),
+        [inputId],
+    );
 
     const handleFile = useCallback(
         async (file: File) => {
@@ -70,7 +78,7 @@ export function FileUploader({
             }
             await upload(file);
         },
-        [upload, reset],
+        [upload, reset, validate],
     );
 
     function onInputChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -93,12 +101,12 @@ export function FileUploader({
         return (
             <>
                 {children({
-                    open: () => inputRef.current?.click(),
+                    open,
                     stage,
                     progress,
                 })}
                 <input
-                    ref={inputRef}
+                    id={inputId}
                     type="file"
                     accept={accept.join(",")}
                     className="hidden"
@@ -121,7 +129,7 @@ export function FileUploader({
             )}
 
             <div
-                onClick={() => !busy && inputRef.current?.click()}
+                onClick={() => !busy && open()}
                 onDragOver={(e) => {
                     e.preventDefault();
                     setDragging(true);
@@ -234,7 +242,7 @@ export function FileUploader({
                 )}
 
                 <input
-                    ref={inputRef}
+                    id={inputId}
                     type="file"
                     accept={accept.join(",")}
                     className="hidden"

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef, Suspense } from "react";
+import { useState, useCallback, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Briefcase, ArrowRight, Eye, EyeOff } from "lucide-react";
@@ -26,15 +26,6 @@ function ResetPasswordContent() {
     const [isLoading, setIsLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     const [serverError, setServerError] = useState<string | null>(null);
-    const abortRef = useRef<AbortController | null>(null);
-
-    useEffect(
-        () => () => {
-            abortRef.current?.abort();
-        },
-        [],
-    );
-
     // Redirect to login 2 s after success
     useEffect(() => {
         if (!success) return;
@@ -60,22 +51,13 @@ function ResetPasswordContent() {
                 return;
             }
 
-            abortRef.current?.abort();
-            const controller = new AbortController();
-            abortRef.current = controller;
-
             setIsLoading(true);
             setServerError(null);
 
             try {
-                await authService.resetPassword(
-                    token,
-                    newPassword,
-                    controller.signal,
-                );
+                await authService.resetPassword(token, newPassword);
                 setSuccess(true);
             } catch (err) {
-                if ((err as Error).name === "AbortError") return;
                 setServerError(
                     parseApiError(err, {
                         400: "This reset link is invalid or has expired.",

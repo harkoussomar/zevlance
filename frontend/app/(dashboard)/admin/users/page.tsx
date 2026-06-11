@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { AdminFilters } from "@/modules/admin/shared/components/AdminFilters";
 import { UserTable } from "@/modules/admin/users/components/UserTable";
 import { PageHeader } from "@/modules/shared/components/PageHeader";
 
-export default function AdminUsersPage() {
+function AdminUsersContent() {
     const searchParams = useSearchParams();
     const [page, setPage] = useState(0);
     const [roleFilter, setRoleFilter] = useState(searchParams.get("role") ?? "");
@@ -52,5 +52,13 @@ export default function AdminUsersPage() {
                 />
             </div>
         </>
+    );
+}
+
+export default function AdminUsersPage() {
+    return (
+        <Suspense>
+            <AdminUsersContent />
+        </Suspense>
     );
 }
