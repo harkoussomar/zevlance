@@ -33,6 +33,8 @@ build/
 .vscode/
 
 # Secrets
-.env
+.env*
+!.env.example
+backend/cookies.txt
 application-dev.yml
 *.log
